@@ -9,7 +9,7 @@ import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { logger } from "./logger.js";
-import { getWorkspaceContext, detectWorkspacePath } from "./workspace-context.js";
+import { detectWorkspacePath } from "./workspace-context.js";
 import { repositoryCache } from "./repository-cache.js";
 import type { ExternalApiService } from "../application/services/external-api.service.js";
 
@@ -233,6 +233,7 @@ async function findRepositoryIdFromApi(
           typeof r === "object" &&
           "description" in r &&
           typeof (r as { description?: string }).description === "string" &&
+          repoInfo.remoteUrl &&
           (r as { description: string }).description.includes(repoInfo.remoteUrl)
       ) as { id: string; name: string } | undefined;
 

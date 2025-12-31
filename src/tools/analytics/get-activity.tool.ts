@@ -23,7 +23,7 @@ class GetActivityTool extends BaseToolHandler implements BaseToolDefinition<GetA
   });
 
   async execute(params: GetActivityParams): Promise<FormattedResponse> {
-    this.logStart(this.name, params as Record<string, unknown>);
+    this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();

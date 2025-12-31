@@ -31,7 +31,7 @@ class UpdateRepositoryPromptTool extends BaseToolHandler implements BaseToolDefi
   });
 
   async execute(params: UpdateRepositoryPromptParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -43,14 +43,14 @@ class UpdateRepositoryPromptTool extends BaseToolHandler implements BaseToolDefi
 
       const result = await apiService.put(`/api/repositories/${params.repositoryId}/prompts/${params.promptId}`, body);
       
-      this.logSuccess(this.name, params, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Updated prompt ${params.promptId} for repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Updated prompt ${params.promptId} for repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to update repository prompt", params, startTime);
+      return this.handleError(this.name, error, "Failed to update repository prompt", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

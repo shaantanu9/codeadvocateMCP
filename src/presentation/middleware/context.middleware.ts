@@ -90,9 +90,9 @@ export function contextMiddleware(
         path: req.path,
       });
 
-      res.status(429);
-      res.setHeader("Content-Type", "application/json");
-      res.json({
+      _res.status(429);
+      _res.setHeader("Content-Type", "application/json");
+      _res.json({
         jsonrpc: "2.0",
         error: {
           code: -32000,

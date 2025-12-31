@@ -28,7 +28,7 @@ class ListRepositoriesTool extends BaseToolHandler implements BaseToolDefinition
   });
 
   async execute(params: ListRepositoriesParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -46,14 +46,14 @@ class ListRepositoriesTool extends BaseToolHandler implements BaseToolDefinition
 
       const result = await apiService.get("/api/repositories", queryParams);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: "Retrieved repositories",
       });
       
       return jsonResponse(result, `✅ Retrieved repositories`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to list repositories", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to list repositories", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

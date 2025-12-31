@@ -31,7 +31,7 @@ class CreateCompanyRepositoryTool extends BaseToolHandler implements BaseToolDef
   });
 
   async execute(params: CreateCompanyRepositoryParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -44,14 +44,14 @@ class CreateCompanyRepositoryTool extends BaseToolHandler implements BaseToolDef
 
       const result = await apiService.post(`/api/companies/${params.companyId}/repositories`, body);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Created repository for company: ${params.companyId}`,
       });
       
       return jsonResponse(result, `✅ Created repository for company: ${params.companyId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to create company repository", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to create company repository", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

@@ -30,7 +30,7 @@ class ListCompanyRepositoriesTool extends BaseToolHandler implements BaseToolDef
   });
 
   async execute(params: ListCompanyRepositoriesParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -47,14 +47,14 @@ class ListCompanyRepositoriesTool extends BaseToolHandler implements BaseToolDef
 
       const result = await apiService.get(`/api/companies/${params.companyId}/repositories`, queryParams);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Retrieved repositories for company: ${params.companyId}`,
       });
       
       return jsonResponse(result, `✅ Retrieved repositories for company: ${params.companyId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to list company repositories", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to list company repositories", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

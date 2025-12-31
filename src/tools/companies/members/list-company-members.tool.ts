@@ -23,20 +23,20 @@ class ListCompanyMembersTool extends BaseToolHandler implements BaseToolDefiniti
   });
 
   async execute(params: ListCompanyMembersParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
       const result = await apiService.get(`/api/companies/${params.companyId}/members`);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Retrieved members for company: ${params.companyId}`,
       });
       
       return jsonResponse(result, `✅ Retrieved members for company: ${params.companyId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to list company members", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to list company members", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

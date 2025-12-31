@@ -25,7 +25,7 @@ class InviteCompanyMemberTool extends BaseToolHandler implements BaseToolDefinit
   });
 
   async execute(params: InviteCompanyMemberParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -35,14 +35,14 @@ class InviteCompanyMemberTool extends BaseToolHandler implements BaseToolDefinit
 
       const result = await apiService.post(`/api/companies/${params.companyId}/invitations`, body);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Created invitation for company: ${params.companyId}`,
       });
       
       return jsonResponse(result, `✅ Created invitation for company: ${params.companyId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to invite company member", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to invite company member", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

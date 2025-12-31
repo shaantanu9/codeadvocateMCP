@@ -32,7 +32,7 @@ class ListRepositoryPrRulesTool extends BaseToolHandler implements BaseToolDefin
   });
 
   async execute(params: ListRepositoryPrRulesParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -56,14 +56,14 @@ class ListRepositoryPrRulesTool extends BaseToolHandler implements BaseToolDefin
 
       const result = await apiService.get(`/api/repositories/${params.repositoryId}/pr-rules`, queryParams);
       
-      this.logSuccess(this.name, params, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Retrieved PR rules for repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Retrieved PR rules for repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to list repository PR rules", params, startTime);
+      return this.handleError(this.name, error, "Failed to list repository PR rules", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

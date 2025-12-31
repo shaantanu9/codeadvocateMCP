@@ -16,6 +16,8 @@ describe("Context Management", () => {
       const context: RequestContext = {
         requestId: "test-request-123",
         token: "test-token",
+        ip: "127.0.0.1",
+        timestamp: Date.now(),
       };
 
       const result = await runInContext(context, async () => {
@@ -29,6 +31,8 @@ describe("Context Management", () => {
       const context: RequestContext = {
         requestId: "test-request-456",
         token: "test-token-456",
+        ip: "127.0.0.1",
+        timestamp: Date.now(),
       };
 
       await runInContext(context, async () => {
@@ -44,6 +48,8 @@ describe("Context Management", () => {
       const context: RequestContext = {
         requestId: "test-request-error",
         token: "test-token",
+        ip: "127.0.0.1",
+        timestamp: Date.now(),
       };
 
       await expect(
@@ -57,11 +63,15 @@ describe("Context Management", () => {
       const context1: RequestContext = {
         requestId: "request-1",
         token: "token-1",
+        ip: "127.0.0.1",
+        timestamp: Date.now(),
       };
 
       const context2: RequestContext = {
         requestId: "request-2",
         token: "token-2",
+        ip: "127.0.0.1",
+        timestamp: Date.now(),
       };
 
       await runInContext(context1, async () => {
@@ -84,6 +94,8 @@ describe("Context Management", () => {
       const context: RequestContext = {
         requestId: "test-id",
         token: "test-token",
+        ip: "127.0.0.1",
+        timestamp: Date.now(),
       };
 
       await runInContext(context, () => {
@@ -102,6 +114,8 @@ describe("Context Management", () => {
       const context: RequestContext = {
         requestId: "test-id",
         token: "test-token",
+        ip: "127.0.0.1",
+        timestamp: Date.now(),
       };
 
       await runInContext(context, () => {

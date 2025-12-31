@@ -21,20 +21,20 @@ class GetRepositoryAnalysisTool extends BaseToolHandler implements BaseToolDefin
   });
 
   async execute(params: GetRepositoryAnalysisParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
       const result = await apiService.get(`/api/repositories/${params.repositoryId}/analysis`);
       
-      this.logSuccess(this.name, params, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Retrieved analysis for repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Retrieved analysis for repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to get repository analysis", params, startTime);
+      return this.handleError(this.name, error, "Failed to get repository analysis", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

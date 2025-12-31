@@ -32,7 +32,7 @@ class ListRepositoryRulesTool extends BaseToolHandler implements BaseToolDefinit
   });
 
   async execute(params: ListRepositoryRulesParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -56,14 +56,14 @@ class ListRepositoryRulesTool extends BaseToolHandler implements BaseToolDefinit
 
       const result = await apiService.get(`/api/repositories/${params.repositoryId}/rules`, queryParams);
       
-      this.logSuccess(this.name, params, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Retrieved rules for repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Retrieved rules for repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to list repository rules", params, startTime);
+      return this.handleError(this.name, error, "Failed to list repository rules", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

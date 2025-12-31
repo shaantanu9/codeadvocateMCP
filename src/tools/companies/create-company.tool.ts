@@ -31,7 +31,7 @@ class CreateCompanyTool extends BaseToolHandler implements BaseToolDefinition<Cr
   });
 
   async execute(params: CreateCompanyParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -43,14 +43,14 @@ class CreateCompanyTool extends BaseToolHandler implements BaseToolDefinition<Cr
 
       const result = await apiService.post("/api/companies", body);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Created company: ${params.name}`,
       });
       
       return jsonResponse(result, `✅ Created company: ${params.name}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to create company", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to create company", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

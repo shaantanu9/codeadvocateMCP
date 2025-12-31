@@ -9,6 +9,7 @@ import { BaseToolHandler } from "../base/tool-handler.base.js";
 import { jsonResponse } from "../../utils/response-formatter.js";
 import type { BaseToolDefinition } from "../base/base-tool.interface.js";
 import type { FormattedResponse } from "../../utils/response-formatter.js";
+import { processTags } from "../../utils/tag-filter.js";
 
 export interface CreateSnippetParams {
   title: string;

@@ -21,20 +21,20 @@ class GetCompanyTool extends BaseToolHandler implements BaseToolDefinition<GetCo
   });
 
   async execute(params: GetCompanyParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
       const result = await apiService.get(`/api/companies/${params.companyId}`);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Retrieved company: ${params.companyId}`,
       });
       
       return jsonResponse(result, `✅ Retrieved company: ${params.companyId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to get company", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to get company", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

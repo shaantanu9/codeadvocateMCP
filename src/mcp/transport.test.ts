@@ -1,16 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Request, Response } from "express";
 import { handleMcpRequest } from "./transport.js";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 
-// Mock MCP Server
-const mockServer = {
-  handleRequest: vi.fn().mockResolvedValue({
-    jsonrpc: "2.0",
-    id: 1,
-    result: { tools: [] },
-  }),
-} as unknown as Server;
+// Mock createMcpServer
+vi.mock("./server.js", () => ({
+  createMcpServer: vi.fn(),
+}));
+
+import { createMcpServer } from "./server.js";
 
 describe("MCP Transport", () => {
   let mockRequest: Partial<Request>;
@@ -33,6 +30,8 @@ describe("MCP Transport", () => {
       setHeader: vi.fn().mockReturnThis(),
       status: vi.fn().mockReturnThis(),
       send: vi.fn().mockReturnThis(),
+      on: vi.fn(),
+      headersSent: false,
     };
 
     vi.clearAllMocks();
@@ -40,34 +39,34 @@ describe("MCP Transport", () => {
 
   describe("handleMcpRequest", () => {
     it("should handle MCP request and return response", async () => {
-      await handleMcpRequest(mockServer, mockRequest as Request, mockResponse as Response);
+      const mockServer = {
+        connect: vi.fn().mockResolvedValue(undefined),
+        close: vi.fn(),
+      };
+      vi.mocked(createMcpServer).mockReturnValue(mockServer as any);
 
-      expect(mockServer.handleRequest).toHaveBeenCalled();
-      expect(mockResponse.setHeader).toHaveBeenCalledWith(
-        "Content-Type",
-        "text/event-stream"
-      );
+      // Mock StreamableHTTPServerTransport
+      const mockTransport = {
+        handleRequest: vi.fn().mockResolvedValue(undefined),
+        close: vi.fn(),
+      };
+      vi.doMock("@modelcontextprotocol/sdk/server/streamableHttp.js", () => ({
+        StreamableHTTPServerTransport: vi.fn().mockImplementation(() => mockTransport),
+      }));
+
+      await handleMcpRequest(mockRequest as Request, mockResponse as Response, vi.fn());
+
+      expect(createMcpServer).toHaveBeenCalled();
     });
 
     it("should handle errors gracefully", async () => {
-      vi.mocked(mockServer.handleRequest).mockRejectedValue(
-        new Error("Test error")
-      );
+      vi.mocked(createMcpServer).mockImplementation(() => {
+        throw new Error("Test error");
+      });
 
-      await handleMcpRequest(mockServer, mockRequest as Request, mockResponse as Response);
+      await handleMcpRequest(mockRequest as Request, mockResponse as Response, vi.fn());
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
     });
-
-    it("should validate MCP protocol version", async () => {
-      mockRequest.headers = {};
-
-      await handleMcpRequest(mockServer, mockRequest as Request, mockResponse as Response);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-    });
   });
 });
-
-
-

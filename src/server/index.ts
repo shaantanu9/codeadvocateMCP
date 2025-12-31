@@ -1,6 +1,6 @@
 /**
  * Server Startup
- * 
+ *
  * Initializes and starts the HTTP server with graceful shutdown handling.
  */
 
@@ -10,13 +10,13 @@ import { envConfig } from "../config/env.js";
 import { wellnessScheduler } from "../core/wellness-scheduler.js";
 import * as WellnessTools from "../tools/wellness/index.js";
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3111;
-
 /**
  * Starts the HTTP server
+ * Uses PORT from validated environment configuration (.env file)
  */
 export function startServer(): Server {
   const app = createApp();
+  const PORT = envConfig.port;
 
   const server = app.listen(PORT, () => {
     console.log(`[MCP] Server running at http://localhost:${PORT}/mcp`);
@@ -24,13 +24,17 @@ export function startServer(): Server {
     console.log(`[MCP] Ready to accept connections`);
     console.log(`[MCP] Protocol: Streamable HTTP (2025-03-26)`);
     console.log(`[MCP] Environment: ${envConfig.nodeEnv}`);
-    console.log(`[MCP] Port: ${PORT}`);
+    console.log(`[MCP] Port: ${PORT} (from .env)`);
   });
 
   // Start wellness scheduler
   wellnessScheduler.setBreakReminderTool(WellnessTools.breakReminderTool);
   wellnessScheduler.start();
-  console.log(`[Wellness] Scheduler started (interval: ${wellnessScheduler.getStatus().checkInterval / 1000 / 60} minutes)`);
+  console.log(
+    `[Wellness] Scheduler started (interval: ${
+      wellnessScheduler.getStatus().checkInterval / 1000 / 60
+    } minutes)`
+  );
 
   // Graceful shutdown handlers
   setupGracefulShutdown(server);
@@ -44,10 +48,10 @@ export function startServer(): Server {
 function setupGracefulShutdown(server: Server) {
   const shutdown = (signal: string) => {
     console.log(`\n[Server] Received ${signal}, shutting down gracefully...`);
-    
+
     // Stop wellness scheduler
     wellnessScheduler.stop();
-    
+
     server.close(() => {
       console.log("[Server] HTTP server closed");
       process.exit(0);
@@ -74,4 +78,3 @@ function setupGracefulShutdown(server: Server) {
     process.exit(1);
   });
 }
-

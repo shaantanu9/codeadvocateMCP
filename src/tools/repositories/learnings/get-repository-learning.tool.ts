@@ -23,20 +23,20 @@ class GetRepositoryLearningTool extends BaseToolHandler implements BaseToolDefin
   });
 
   async execute(params: GetRepositoryLearningParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
       const result = await apiService.get(`/api/repositories/${params.repositoryId}/learnings/${params.learningId}`);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Retrieved learning ${params.learningId} for repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Retrieved learning ${params.learningId} for repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to get repository learning", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to get repository learning", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

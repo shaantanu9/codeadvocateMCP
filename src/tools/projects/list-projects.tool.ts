@@ -29,7 +29,7 @@ class ListProjectsTool extends BaseToolHandler implements BaseToolDefinition<Lis
   });
 
   async execute(params: ListProjectsParams): Promise<FormattedResponse> {
-    this.logStart(this.name, params as Record<string, unknown>);
+    this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();

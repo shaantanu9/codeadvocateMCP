@@ -87,12 +87,10 @@ export class HttpClient {
         if (!response.ok) {
           const errorText = await response.text().catch(() => "Unknown error");
           let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
-          let errorDetails: Record<string, unknown> = {};
 
           try {
             const errorJson = JSON.parse(errorText);
             errorMessage = errorJson.message || errorJson.error || errorMessage;
-            errorDetails = errorJson;
             
             // Enhanced error logging for debugging
             logger.error(`HTTP ${options.method} ${url.pathname} failed`, {

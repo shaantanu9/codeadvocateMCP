@@ -35,7 +35,7 @@ class GrantRepositoryPermissionTool extends BaseToolHandler implements BaseToolD
   );
 
   async execute(params: GrantRepositoryPermissionParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -47,14 +47,14 @@ class GrantRepositoryPermissionTool extends BaseToolHandler implements BaseToolD
 
       const result = await apiService.post(`/api/repositories/${params.repositoryId}/permissions`, body);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Granted permission for repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Granted permission for repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to grant repository permission", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to grant repository permission", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

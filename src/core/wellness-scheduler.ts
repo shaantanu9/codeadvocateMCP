@@ -179,7 +179,10 @@ class WellnessScheduler {
       this.start();
     }
 
-    logger.info("Wellness scheduler: Configuration updated", this.config);
+    logger.info("Wellness scheduler: Configuration updated", {
+      checkInterval: this.config.checkInterval,
+      enabled: this.config.enabled,
+    });
   }
 
   /**

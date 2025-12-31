@@ -21,7 +21,7 @@ class ExplorePublicContentTool extends BaseToolHandler implements BaseToolDefini
   });
 
   async execute(params: ExplorePublicContentParams): Promise<FormattedResponse> {
-    this.logStart(this.name, params as Record<string, unknown>);
+    this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();

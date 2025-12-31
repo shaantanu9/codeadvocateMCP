@@ -31,7 +31,7 @@ class ListRepositoryPromptsTool extends BaseToolHandler implements BaseToolDefin
   });
 
   async execute(params: ListRepositoryPromptsParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -44,14 +44,14 @@ class ListRepositoryPromptsTool extends BaseToolHandler implements BaseToolDefin
 
       const result = await apiService.get(`/api/repositories/${params.repositoryId}/prompts`, queryParams);
       
-      this.logSuccess(this.name, params, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Retrieved prompts for repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Retrieved prompts for repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to list repository prompts", params, startTime);
+      return this.handleError(this.name, error, "Failed to list repository prompts", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

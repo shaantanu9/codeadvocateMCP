@@ -1,0 +1,10 @@
+# MCP Server Authentication (REQUIRED)
+MCP_SERVER_TOKEN=b53f669d647b27e26cf8fc902e11792a3fcffd31d2256bd4a94ce5667c27568e
+
+# External API Configuration (for tools that call external APIs)
+EXTERNAL_API_KEY=sk_GVCVDiKHNHkP2XgXHHaOkAgTdYLemgD_UFGdS2f7kps
+EXTERNAL_API_URL=http://localhost:5656
+
+# Server Configuration
+PORT=3111
+NODE_ENV=development

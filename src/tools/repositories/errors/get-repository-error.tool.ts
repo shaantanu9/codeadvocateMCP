@@ -23,20 +23,20 @@ class GetRepositoryErrorTool extends BaseToolHandler implements BaseToolDefiniti
   });
 
   async execute(params: GetRepositoryErrorParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
       const result = await apiService.get(`/api/repositories/${params.repositoryId}/errors/${params.errorId}`);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Retrieved error ${params.errorId} for repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Retrieved error ${params.errorId} for repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to get repository error", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to get repository error", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

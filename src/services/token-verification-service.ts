@@ -39,7 +39,6 @@ export async function verifyToken(
     if (!response.ok) {
       // If the API returns an error, token is invalid
       let errorMessage = `Token verification failed: ${response.status}`;
-      let errorDetails: string | undefined;
 
       try {
         const errorData = await response.json();
@@ -48,9 +47,6 @@ export async function verifyToken(
           errorMessage = errorData.message;
         } else if (errorData.error) {
           errorMessage = errorData.error;
-        }
-        if (errorData.details) {
-          errorDetails = errorData.details;
         }
       } catch {
         // If JSON parsing fails, try text

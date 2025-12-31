@@ -44,7 +44,7 @@ describe("Auth Middleware", () => {
 
   describe("authMiddleware", () => {
     it("should reject request without token in context", async () => {
-      vi.mocked(runInContext).mockImplementation(async (context, fn) => {
+      vi.mocked(runInContext).mockImplementation(async (_context, fn) => {
         // Simulate no context
         return fn();
       });
@@ -67,7 +67,7 @@ describe("Auth Middleware", () => {
         ip: "127.0.0.1",
       };
 
-      vi.mocked(runInContext).mockImplementation(async (context, fn) => {
+      vi.mocked(runInContext).mockImplementation(async (_context, fn) => {
         // Simulate context with token
         return fn();
       });

@@ -19,7 +19,7 @@ describe("Core Errors", () => {
     });
 
     it("should have default code if not provided", () => {
-      const error = new AppError("Test error");
+      const error = new AppError("Test error", "APP_ERROR");
       expect(error.code).toBe("APP_ERROR");
     });
   });

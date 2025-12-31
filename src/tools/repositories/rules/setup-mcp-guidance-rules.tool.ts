@@ -10,10 +10,8 @@ import { BaseToolHandler } from "../../base/tool-handler.base.js";
 import { jsonResponse } from "../../../utils/response-formatter.js";
 import { logger } from "../../../core/logger.js";
 import { detectRepositoryId } from "../../../core/repository-detector.js";
-import { createExternalApiService } from "../../../application/services/external-api.service.js";
 import type { BaseToolDefinition } from "../../base/base-tool.interface.js";
 import type { FormattedResponse } from "../../../utils/response-formatter.js";
-import type { ExternalApiService } from "../../../application/services/external-api.service.js";
 
 export interface SetupMcpGuidanceRulesParams {
   repositoryId?: string;

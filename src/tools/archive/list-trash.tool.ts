@@ -25,7 +25,7 @@ class ListTrashTool extends BaseToolHandler implements BaseToolDefinition<ListTr
   });
 
   async execute(params: ListTrashParams): Promise<FormattedResponse> {
-    this.logStart(this.name, params as Record<string, unknown>);
+    this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();

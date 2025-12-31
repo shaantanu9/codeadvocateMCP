@@ -31,7 +31,7 @@ class ListCheckpointsTool
   });
 
   async execute(params: ListCheckpointsParams): Promise<FormattedResponse> {
-    this.logStart(this.name, params as Record<string, unknown>);
+    this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const checkpoints = repositoryCache.listProgressCheckpoints();

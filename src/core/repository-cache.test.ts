@@ -35,7 +35,20 @@ describe("Repository Cache", () => {
         rootPath: "/test/project",
         gitConfig: {},
         documentation: "# Test",
-        structure: { files: [] },
+        structure: {
+          files: [],
+          structure: {},
+          entryPoints: [],
+          dependencies: [],
+          configFiles: [],
+          codePatterns: [],
+          linting: {},
+          architecture: {
+            layers: [],
+            patterns: [],
+            conventions: [],
+          },
+        },
       };
 
       const metadata = {

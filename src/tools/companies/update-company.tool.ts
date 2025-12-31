@@ -33,7 +33,7 @@ class UpdateCompanyTool extends BaseToolHandler implements BaseToolDefinition<Up
   });
 
   async execute(params: UpdateCompanyParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -46,14 +46,14 @@ class UpdateCompanyTool extends BaseToolHandler implements BaseToolDefinition<Up
 
       const result = await apiService.patch(`/api/companies/${params.companyId}`, body);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Updated company: ${params.companyId}`,
       });
       
       return jsonResponse(result, `✅ Updated company: ${params.companyId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to update company", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to update company", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

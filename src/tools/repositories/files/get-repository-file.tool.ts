@@ -23,20 +23,20 @@ class GetRepositoryFileTool extends BaseToolHandler implements BaseToolDefinitio
   });
 
   async execute(params: GetRepositoryFileParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
       const result = await apiService.get(`/api/repositories/${params.repositoryId}/files/${params.fileId}`);
       
-      this.logSuccess(this.name, params, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Retrieved file ${params.fileId} for repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Retrieved file ${params.fileId} for repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to get repository file", params, startTime);
+      return this.handleError(this.name, error, "Failed to get repository file", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

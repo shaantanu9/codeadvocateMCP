@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { registerAllTools } from "./tool-registry.js";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 // Mock MCP Server
 const mockServer = {
-  setRequestHandler: vi.fn(),
+  tool: vi.fn(),
   connect: vi.fn(),
-} as unknown as Server;
+} as unknown as McpServer;
 
 // Mock tool modules
 vi.mock("./snippets/index.js", () => ({
@@ -26,13 +26,13 @@ describe("Tool Registry", () => {
     it("should register all tools with MCP server", () => {
       registerAllTools(mockServer);
 
-      // Verify that setRequestHandler was called
+      // Verify that tool() method was called for each tool
       // (exact number depends on number of tools)
-      expect(mockServer.setRequestHandler).toHaveBeenCalled();
+      expect(mockServer.tool).toHaveBeenCalled();
     });
 
     it("should handle tool registration errors gracefully", () => {
-      vi.mocked(mockServer.setRequestHandler).mockImplementation(() => {
+      vi.mocked(mockServer.tool).mockImplementation(() => {
         throw new Error("Registration failed");
       });
 

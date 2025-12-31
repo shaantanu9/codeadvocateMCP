@@ -34,7 +34,7 @@ class RevokeRepositoryPermissionTool extends BaseToolHandler implements BaseTool
   );
 
   async execute(params: RevokeRepositoryPermissionParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -50,14 +50,14 @@ class RevokeRepositoryPermissionTool extends BaseToolHandler implements BaseTool
 
       const result = await apiService.delete(`/api/repositories/${params.repositoryId}/permissions`, queryParams);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Revoked permission for repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Revoked permission for repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to revoke repository permission", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to revoke repository permission", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

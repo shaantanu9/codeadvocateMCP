@@ -27,7 +27,7 @@ class GetArchivedSnippetsTool extends BaseToolHandler implements BaseToolDefinit
   });
 
   async execute(params: GetArchivedSnippetsParams): Promise<FormattedResponse> {
-    this.logStart(this.name, params as Record<string, unknown>);
+    this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();

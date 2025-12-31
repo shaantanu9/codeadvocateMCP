@@ -30,12 +30,13 @@ export function registerAuthTools(server: McpServer): void {
             ? `${token.substring(0, 4)}...${token.substring(token.length - 4)}`
             : "***";
 
-        const serverTokenPreview =
-          envConfig.mcpServerToken.length > 8
-            ? `${envConfig.mcpServerToken.substring(0, 4)}...${envConfig.mcpServerToken.substring(
-                envConfig.mcpServerToken.length - 4
-              )}`
-            : "***";
+        // Server token preview for logging (not used but kept for potential future use)
+        // const serverTokenPreview =
+        //   envConfig.mcpServerToken.length > 8
+        //     ? `${envConfig.mcpServerToken.substring(0, 4)}...${envConfig.mcpServerToken.substring(
+        //         envConfig.mcpServerToken.length - 4
+        //       )}`
+        //     : "***";
 
         if (isValid) {
           return textResponse(

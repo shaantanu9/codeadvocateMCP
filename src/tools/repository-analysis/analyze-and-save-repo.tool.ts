@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { BaseToolHandler } from "../base/tool-handler.base.js";
-import { jsonResponse, codeResponse } from "../../utils/response-formatter.js";
+import { jsonResponse } from "../../utils/response-formatter.js";
 import type { BaseToolDefinition } from "../base/base-tool.interface.js";
 import type { FormattedResponse } from "../../utils/response-formatter.js";
 import { execSync } from "node:child_process";
@@ -1250,7 +1250,7 @@ class AnalyzeAndSaveRepoTool
    * Extract code patterns and details from files
    */
   private extractCodeDetails(
-    filePath: string,
+    _filePath: string,
     content: string
   ): {
     imports: string[];
@@ -1454,7 +1454,7 @@ class AnalyzeAndSaveRepoTool
    * Extract full function body code from file content
    */
   private extractFunctionBody(
-    filePath: string,
+    _filePath: string,
     content: string,
     functionName: string,
     lineNumber: number
@@ -1536,7 +1536,7 @@ class AnalyzeAndSaveRepoTool
   private categorizeFunction(
     name: string,
     filePath: string,
-    content: string
+    _content: string
   ): FunctionDetail["category"] {
     const lowerName = name.toLowerCase();
     const lowerPath = filePath.toLowerCase();
@@ -1798,7 +1798,7 @@ class AnalyzeAndSaveRepoTool
    */
   private generateDependencyMermaid(
     structure: CodeStructure,
-    rootPath: string
+    _rootPath: string
   ): string {
     let mermaid = "graph TD\n";
     const fileMap = new Map<string, string>();
@@ -2046,7 +2046,7 @@ class AnalyzeAndSaveRepoTool
    */
   private buildFolderTree(
     files: CodeStructure["files"],
-    rootPath: string
+    _rootPath: string
   ): FolderNode {
     const tree: FolderNode = {
       name: "root",
@@ -4423,7 +4423,7 @@ ${repoInfo.remoteUrl ? `\n**Repository:** ${repoInfo.remoteUrl}` : ""}`;
   async execute(params: AnalyzeAndSaveRepoParams): Promise<FormattedResponse> {
     const { startTime } = this.logStart(
       this.name,
-      params as Record<string, unknown>
+      params as unknown as Record<string, unknown>
     );
 
     try {
@@ -4975,7 +4975,7 @@ ${repoInfo.remoteUrl ? `\n**Repository:** ${repoInfo.remoteUrl}` : ""}`;
       }
 
       // Log success with comprehensive result summary
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Analyzed ${structure.files.length} files, extracted ${
           comprehensiveAnalysis.allFunctions.length

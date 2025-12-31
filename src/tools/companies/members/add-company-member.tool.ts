@@ -35,7 +35,7 @@ class AddCompanyMemberTool extends BaseToolHandler implements BaseToolDefinition
   });
 
   async execute(params: AddCompanyMemberParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -50,14 +50,14 @@ class AddCompanyMemberTool extends BaseToolHandler implements BaseToolDefinition
 
       const result = await apiService.post(`/api/companies/${params.companyId}/members`, body);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Added member to company: ${params.companyId}`,
       });
       
       return jsonResponse(result, `✅ Added member to company: ${params.companyId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to add company member", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to add company member", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

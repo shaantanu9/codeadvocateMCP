@@ -31,7 +31,7 @@ class UpdateRepositoryTool extends BaseToolHandler implements BaseToolDefinition
   });
 
   async execute(params: UpdateRepositoryParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -44,14 +44,14 @@ class UpdateRepositoryTool extends BaseToolHandler implements BaseToolDefinition
 
       const result = await apiService.patch(`/api/repositories/${params.repositoryId}`, body);
       
-      this.logSuccess(this.name, params, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Updated repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Updated repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to update repository", params, startTime);
+      return this.handleError(this.name, error, "Failed to update repository", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

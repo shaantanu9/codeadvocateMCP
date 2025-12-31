@@ -25,7 +25,7 @@ class CreateRepositoryTool extends BaseToolHandler implements BaseToolDefinition
   });
 
   async execute(params: CreateRepositoryParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
@@ -35,14 +35,14 @@ class CreateRepositoryTool extends BaseToolHandler implements BaseToolDefinition
 
       const result = await apiService.post("/api/repositories", body);
       
-      this.logSuccess(this.name, params, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Created repository: ${params.name}`,
       });
       
       return jsonResponse(result, `✅ Created repository: ${params.name}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to create repository", params, startTime);
+      return this.handleError(this.name, error, "Failed to create repository", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

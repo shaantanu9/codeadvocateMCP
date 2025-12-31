@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { AnalyzeAndSaveRepoTool } from "./analyze-and-save-repo.tool.js";
-import { execSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { repositoryCache } from "../../core/repository-cache.js";
+import { analyzeAndSaveRepoTool } from "./analyze-and-save-repo.tool.js";
 
 // Mock dependencies
 vi.mock("node:child_process");
@@ -14,10 +10,10 @@ vi.mock("../../application/services/external-api.service.js");
 vi.mock("../../services/ai-service-factory.js");
 
 describe("AnalyzeAndSaveRepoTool", () => {
-  let tool: AnalyzeAndSaveRepoTool;
+  let tool: typeof analyzeAndSaveRepoTool;
 
   beforeEach(() => {
-    tool = new AnalyzeAndSaveRepoTool();
+    tool = analyzeAndSaveRepoTool;
     vi.clearAllMocks();
   });
 

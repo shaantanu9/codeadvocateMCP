@@ -29,7 +29,7 @@ class ListDocumentationsTool extends BaseToolHandler implements BaseToolDefiniti
   });
 
   async execute(params: ListDocumentationsParams): Promise<FormattedResponse> {
-    this.logStart(this.name, params as Record<string, unknown>);
+    this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();

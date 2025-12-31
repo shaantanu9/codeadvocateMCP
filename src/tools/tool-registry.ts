@@ -25,7 +25,6 @@ import * as AccountTools from "./accounts/index.js";
 // import * as CompanyTools from "./companies/index.js"; // COMMENTED OUT FOR NOW
 import * as TeamTools from "./teams/index.js";
 import * as RepositoryAnalysisTools from "./repository-analysis/index.js";
-import * as GenericTools from "./generic/index.js";
 import * as WellnessTools from "./wellness/index.js";
 import { registerSessionTools } from "./session-tools.js";
 import { getClientInfoTool } from "./client-info-tool.js";

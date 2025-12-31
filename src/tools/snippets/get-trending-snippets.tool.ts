@@ -23,7 +23,7 @@ class GetTrendingSnippetsTool extends BaseToolHandler implements BaseToolDefinit
   });
 
   async execute(params: GetTrendingSnippetsParams): Promise<FormattedResponse> {
-    this.logStart(this.name, params as Record<string, unknown>);
+    this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();

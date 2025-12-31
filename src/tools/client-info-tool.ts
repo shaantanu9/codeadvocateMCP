@@ -8,6 +8,7 @@ import { z } from "zod";
 import { BaseToolHandler } from "./base/tool-handler.base.js";
 import { jsonResponse } from "../utils/response-formatter.js";
 import { getContext } from "../core/context.js";
+import { ClientType } from "../core/client-detector.js";
 import type { BaseToolDefinition } from "./base/base-tool.interface.js";
 import type { ClientInfo } from "../core/client-detector.js";
 
@@ -18,20 +19,26 @@ class GetClientInfoHandler extends BaseToolHandler {
   protected toolName = "getClientInfo";
 
   async execute(_params: Record<string, never>): Promise<ReturnType<typeof jsonResponse>> {
-    this.logStart({});
+    const { startTime } = this.logStart(this.toolName, {} as unknown as Record<string, unknown>);
 
     try {
       const context = getContext();
       
       if (!context) {
-        return this.handleError("No request context available", new Error("No context"));
+        return this.handleError(
+          this.toolName,
+          new Error("No context"),
+          "No request context available",
+          {} as unknown as Record<string, unknown>,
+          startTime
+        );
       }
 
       const clientInfo: ClientInfo = context.client || {
-        type: "Unknown" as const,
+        type: ClientType.UNKNOWN as ClientType,
         name: "Unknown Client",
-        detectedFrom: "unknown" as const,
-        confidence: "low" as const,
+        detectedFrom: "unknown",
+        confidence: "low",
         userAgent: context.userAgent,
       };
 
@@ -67,7 +74,13 @@ class GetClientInfoHandler extends BaseToolHandler {
         },
       });
     } catch (error) {
-      return this.handleError("Failed to get client information", error as Error);
+      return this.handleError(
+        this.toolName,
+        error as Error,
+        "Failed to get client information",
+        {} as unknown as Record<string, unknown>,
+        startTime
+      );
     }
   }
 }

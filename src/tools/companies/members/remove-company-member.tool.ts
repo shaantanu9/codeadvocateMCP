@@ -25,20 +25,20 @@ class RemoveCompanyMemberTool extends BaseToolHandler implements BaseToolDefinit
   });
 
   async execute(params: RemoveCompanyMemberParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
       const result = await apiService.delete(`/api/companies/${params.companyId}/members/${params.userId}`);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Removed member from company: ${params.companyId}`,
       });
       
       return jsonResponse(result, `✅ Removed member from company: ${params.companyId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to remove company member", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to remove company member", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

@@ -23,20 +23,20 @@ class GetRepositoryPromptTool extends BaseToolHandler implements BaseToolDefinit
   });
 
   async execute(params: GetRepositoryPromptParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
       const result = await apiService.get(`/api/repositories/${params.repositoryId}/prompts/${params.promptId}`);
       
-      this.logSuccess(this.name, params, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Retrieved prompt ${params.promptId} for repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Retrieved prompt ${params.promptId} for repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to get repository prompt", params, startTime);
+      return this.handleError(this.name, error, "Failed to get repository prompt", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

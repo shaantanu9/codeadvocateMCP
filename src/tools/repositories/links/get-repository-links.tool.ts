@@ -23,20 +23,20 @@ class GetRepositoryLinksTool extends BaseToolHandler implements BaseToolDefiniti
   });
 
   async execute(params: GetRepositoryLinksParams): Promise<FormattedResponse> {
-    const { startTime } = this.logStart(this.name, params as Record<string, unknown>);
+    const { startTime } = this.logStart(this.name, params as unknown as Record<string, unknown>);
 
     try {
       const apiService = this.getApiService();
       const result = await apiService.get(`/api/repositories/${params.repositoryId}/links`);
       
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: `Retrieved links for repository: ${params.repositoryId}`,
       });
       
       return jsonResponse(result, `✅ Retrieved links for repository: ${params.repositoryId}`);
     } catch (error) {
-      return this.handleError(this.name, error, "Failed to get repository links", params as Record<string, unknown>, startTime);
+      return this.handleError(this.name, error, "Failed to get repository links", params as unknown as Record<string, unknown>, startTime);
     }
   }
 }

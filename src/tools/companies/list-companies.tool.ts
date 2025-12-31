@@ -45,7 +45,7 @@ class ListCompaniesTool
   async execute(params: ListCompaniesParams): Promise<FormattedResponse> {
     const { startTime } = this.logStart(
       this.name,
-      params as Record<string, unknown>
+      params as unknown as Record<string, unknown>
     );
 
     try {
@@ -68,7 +68,7 @@ class ListCompaniesTool
 
       const result = await apiService.get("/api/companies", queryParams);
 
-      this.logSuccess(this.name, params as Record<string, unknown>, startTime, {
+      this.logSuccess(this.name, params as unknown as Record<string, unknown>, startTime, {
         success: true,
         message: "Retrieved companies",
       });
@@ -79,7 +79,7 @@ class ListCompaniesTool
         this.name,
         error,
         "Failed to list companies",
-        params as Record<string, unknown>,
+        params as unknown as Record<string, unknown>,
         startTime
       );
     }
