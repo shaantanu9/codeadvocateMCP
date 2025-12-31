@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Server - Token Setup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+        
+        .step-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .step-description {
+            color: #666;
+            line-height: 1.6;
+            margin-left: 40px;
+        }
+        
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            margin: 12px 0;
+            overflow-x: auto;
+            margin-left: 40px;
+        }
+        
+        .button {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s;
+            margin-top: 8px;
+        }
+        
+        .button:hover {
+            background: #5568d3;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .info-box strong {
+            color: #1976d2;
+        }
+        
+        .external-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .external-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 MCP Server Token Setup</h1>
+        <p class="subtitle">Get your API key and configure it in Cursor IDE</p>
+        
+        <div class="step">
+            <div>
+                <span class="step-number">1</span>
+                <span class="step-title">Get Your API Key</span>
+            </div>
+            <p class="step-description">
+                Visit your external API to get an API key. The API key will be used to authenticate with the MCP server.
+            </p>
+            <div style="margin-left: 40px; margin-top: 12px;">
+                <a href="http://localhost:5656/api-keys" target="_blank" class="button">
+                    Open API Keys Page →
+                </a>
+            </div>
+        </div>
+        
+        <div class="step">
+            <div>
+                <span class="step-number">2</span>
+                <span class="step-title">Configure in Cursor</span>
+            </div>
+            <p class="step-description">
+                Add the token to your MCP server configuration file:
+            </p>
+            <div class="code-block">
+{
+  "mcpServers": {
+    "demo_mcp": {
+      "url": "http://localhost:3111/mcp",
+      "transport": "sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
+    }
+  }
+}
+            </div>
+            <p class="step-description" style="margin-top: 8px;">
+                <strong>Location:</strong> <code>~/.cursor/mcp.json</code>
+            </p>
+        </div>
+        
+        <div class="step">
+            <div>
+                <span class="step-number">3</span>
+                <span class="step-title">Restart Cursor</span>
+            </div>
+            <p class="step-description">
+                After saving the configuration, completely quit and restart Cursor IDE to apply the changes.
+            </p>
+        </div>
+        
+        <div class="info-box">
+            <strong>💡 Tip:</strong> If you see authentication errors in Cursor's MCP dashboard, 
+            check that your token is valid and correctly formatted in the configuration file.
+        </div>
+        
+        <div style="margin-top: 30px; text-align: center; color: #666; font-size: 14px;">
+            <p>Need help? Check the server status at <a href="http://localhost:3111/health" target="_blank" class="external-link">/health</a></p>
+            <p style="margin-top: 8px;">Get more info at <a href="http://localhost:3111/token-info" target="_blank" class="external-link">/token-info</a></p>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+
