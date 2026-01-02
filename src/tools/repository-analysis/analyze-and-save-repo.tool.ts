@@ -4355,10 +4355,10 @@ This configuration includes all detected API endpoints, their methods, paths, an
     if (
       progress?.steps.snippets?.keyFiles.saved ===
         progress?.steps.snippets?.keyFiles.total &&
-      progress?.steps.snippets?.keyFiles.total > 0
+      (progress?.steps.snippets?.keyFiles.total ?? 0) > 0
     ) {
       logger.info(
-        `⏭️  Skipping key files (${progress.steps.snippets.keyFiles.saved} already saved)`
+        `⏭️  Skipping key files (${progress?.steps.snippets?.keyFiles.saved ?? 0} already saved)`
       );
     } else {
       try {
@@ -4521,13 +4521,15 @@ ${repoInfo.remoteUrl ? `\n**Repository:** ${repoInfo.remoteUrl}` : ""}`;
       params as unknown as Record<string, unknown>
     );
 
+    // Declare checkpointId outside try block to ensure it's in scope for catch block
+    let checkpointId: string | undefined = params.checkpointId;
+    let progress: AnalysisProgress | null = null;
+
     try {
       const apiService = this.getApiService();
       const projectPath = params.projectPath || process.cwd();
 
       // Initialize or load progress checkpoint
-      let progress: AnalysisProgress | null = null;
-      let checkpointId: string | undefined;
 
       if (params.resume) {
         // Try to load existing checkpoint
@@ -4740,7 +4742,7 @@ ${repoInfo.remoteUrl ? `\n**Repository:** ${repoInfo.remoteUrl}` : ""}`;
         const allDocs = this.readDocumentationFiles(repoInfo.rootPath);
         const docFiles = Object.keys(allDocs);
         const missingFiles = docFiles.filter(
-          (f) => !progress.steps.documentation!.filesRead.includes(f)
+          (f) => !progress?.steps.documentation?.filesRead.includes(f)
         );
         if (missingFiles.length > 0) {
           for (const file of missingFiles) {
@@ -5124,7 +5126,7 @@ ${repoInfo.remoteUrl ? `\n**Repository:** ${repoInfo.remoteUrl}` : ""}`;
                 currentStep: progress.currentStep,
                 stepsCompleted: Object.keys(progress.steps).filter(
                   (k) =>
-                    progress.steps[k as keyof typeof progress.steps]?.completed
+                    progress?.steps[k as keyof typeof progress.steps]?.completed
                 ).length,
                 totalSteps: Object.keys(progress.steps).length,
                 summary: this.getProgressSummary(progress),
@@ -5140,7 +5142,7 @@ ${repoInfo.remoteUrl ? `\n**Repository:** ${repoInfo.remoteUrl}` : ""}`;
         error: errorMsg,
         stack: errorStack,
         projectPath: params.projectPath || process.cwd(),
-        checkpointId: checkpointId,
+        checkpointId: checkpointId || params.checkpointId || "unknown",
         resume: params.resume,
         context: "execute",
       });

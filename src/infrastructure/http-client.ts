@@ -1,6 +1,6 @@
 /**
  * HTTP Client
- * 
+ *
  * Centralized HTTP client with retry logic, error handling, and request/response logging
  */
 
@@ -72,7 +72,9 @@ export class HttpClient {
       "dns",
     ];
 
-    return networkErrorPatterns.some((pattern) => errorMessage.includes(pattern));
+    return networkErrorPatterns.some((pattern) =>
+      errorMessage.includes(pattern)
+    );
   }
 
   /**
@@ -104,7 +106,7 @@ export class HttpClient {
       .join(" \\\n  ");
 
     let curlCmd = `curl -X ${method} "${url.toString()}"`;
-    
+
     if (headersList) {
       curlCmd += ` \\\n  ${headersList}`;
     }
@@ -125,7 +127,7 @@ export class HttpClient {
   async request<T = unknown>(options: HttpRequestOptions): Promise<T> {
     const requestId = getRequestId();
     const url = new URL(options.endpoint, this.config.baseUrl);
-    
+
     // Add query parameters
     if (options.queryParams) {
       Object.entries(options.queryParams).forEach(([key, value]) => {
@@ -154,21 +156,25 @@ export class HttpClient {
     }
 
     // Log request details (sanitize sensitive data)
-    const sanitizedBody = options.body ? this.sanitizeRequestBody(options.body) : undefined;
+    const sanitizedBody = options.body
+      ? this.sanitizeRequestBody(options.body)
+      : undefined;
     logger.debug(`HTTP ${options.method} ${url.pathname}`, {
       url: url.toString(),
       endpoint: options.endpoint,
       method: options.method,
       requestId,
       hasBody: !!options.body,
-      bodyPreview: sanitizedBody ? JSON.stringify(sanitizedBody).substring(0, 200) : undefined,
+      bodyPreview: sanitizedBody
+        ? JSON.stringify(sanitizedBody).substring(0, 200)
+        : undefined,
       queryParams: options.queryParams,
     });
 
     // Retry logic with exponential backoff
     let lastError: Error | null = null;
     const startTime = Date.now();
-    
+
     for (let attempt = 0; attempt <= this.config.retries; attempt++) {
       try {
         const response = await fetch(url.toString(), requestOptions);
@@ -180,7 +186,7 @@ export class HttpClient {
           try {
             const errorJson = JSON.parse(errorText);
             errorMessage = errorJson.message || errorJson.error || errorMessage;
-            
+
             // Generate curl command for manual testing
             const curlCommand = this.generateCurlCommand(
               url,
@@ -207,12 +213,16 @@ export class HttpClient {
 
             // Also log curl command separately for easy copy-paste
             logger.error(`🔧 CURL COMMAND FOR MANUAL TESTING:\n${curlCommand}`);
-            
+
             // Don't retry on client errors (4xx)
             if (response.status < 500) {
-              throw new ExternalApiError(errorMessage, errorJson, response.status);
+              throw new ExternalApiError(
+                errorMessage,
+                errorJson,
+                response.status
+              );
             }
-            
+
             // Retry on 5xx errors
             if (response.status >= 500 && attempt < this.config.retries) {
               const backoffDelay = this.calculateBackoffDelay(attempt);
@@ -228,12 +238,16 @@ export class HttpClient {
               continue;
             }
 
-            throw new ExternalApiError(errorMessage, errorJson, response.status);
+            throw new ExternalApiError(
+              errorMessage,
+              errorJson,
+              response.status
+            );
           } catch (parseError) {
             if (parseError instanceof ExternalApiError) {
               throw parseError;
             }
-            
+
             // Generate curl command for manual testing
             const curlCommand = this.generateCurlCommand(
               url,
@@ -243,27 +257,34 @@ export class HttpClient {
             );
 
             // Log parse error
-            logger.error(`HTTP ${options.method} ${url.pathname} failed (parse error)`, {
-              status: response.status,
-              statusText: response.statusText,
-              endpoint: options.endpoint,
-              method: options.method,
-              requestId,
-              errorMessage,
-              rawError: errorText.substring(0, 500),
-              requestBody: sanitizedBody,
-              attempt: attempt + 1,
-              curlCommand, // Include curl command for manual testing
-            });
+            logger.error(
+              `HTTP ${options.method} ${url.pathname} failed (parse error)`,
+              {
+                status: response.status,
+                statusText: response.statusText,
+                endpoint: options.endpoint,
+                method: options.method,
+                requestId,
+                errorMessage,
+                rawError: errorText.substring(0, 500),
+                requestBody: sanitizedBody,
+                attempt: attempt + 1,
+                curlCommand, // Include curl command for manual testing
+              }
+            );
 
             // Also log curl command separately for easy copy-paste
             logger.error(`🔧 CURL COMMAND FOR MANUAL TESTING:\n${curlCommand}`);
-            
+
             // Don't retry on client errors (4xx)
             if (response.status < 500) {
-              throw new ExternalApiError(errorMessage, { raw: errorText }, response.status);
+              throw new ExternalApiError(
+                errorMessage,
+                { raw: errorText },
+                response.status
+              );
             }
-            
+
             // Retry on 5xx errors
             if (response.status >= 500 && attempt < this.config.retries) {
               const backoffDelay = this.calculateBackoffDelay(attempt);
@@ -277,8 +298,12 @@ export class HttpClient {
               await this.delay(backoffDelay);
               continue;
             }
-            
-            throw new ExternalApiError(errorMessage, { raw: errorText }, response.status);
+
+            throw new ExternalApiError(
+              errorMessage,
+              { raw: errorText },
+              response.status
+            );
           }
         }
 
@@ -307,7 +332,7 @@ export class HttpClient {
           if (error.statusCode < 500) {
             throw error;
           }
-          
+
           // Retry on 5xx errors
           if (error.statusCode >= 500 && attempt < this.config.retries) {
             const backoffDelay = this.calculateBackoffDelay(attempt);
@@ -323,7 +348,7 @@ export class HttpClient {
             await this.delay(backoffDelay);
             continue;
           }
-          
+
           // Exhausted retries on 5xx error
           throw error;
         }
@@ -336,7 +361,7 @@ export class HttpClient {
             message: (error as Error).message,
             stack: (error as Error).stack?.substring(0, 500),
           };
-          
+
           logger.warn(`Retrying after network error`, {
             attempt: attempt + 1,
             maxRetries: this.config.retries,
@@ -348,7 +373,7 @@ export class HttpClient {
             elapsedTime,
             errorDetails,
           });
-          
+
           await this.delay(backoffDelay);
           continue;
         }
@@ -362,11 +387,13 @@ export class HttpClient {
 
     // If we get here, all retries failed
     const totalElapsedTime = Date.now() - startTime;
-    const errorDetails = lastError ? {
-      name: lastError.name,
-      message: lastError.message,
-      stack: lastError.stack?.substring(0, 1000),
-    } : {};
+    const errorDetails = lastError
+      ? {
+          name: lastError.name,
+          message: lastError.message,
+          stack: lastError.stack?.substring(0, 1000),
+        }
+      : {};
 
     // Generate curl command for manual testing
     const curlCommand = this.generateCurlCommand(
@@ -392,10 +419,14 @@ export class HttpClient {
     });
 
     // Also log curl command separately for easy copy-paste
-    logger.error(`🔧 CURL COMMAND FOR MANUAL TESTING (after ${this.config.retries} retries):\n${curlCommand}`);
+    logger.error(
+      `🔧 CURL COMMAND FOR MANUAL TESTING (after ${this.config.retries} retries):\n${curlCommand}`
+    );
 
     throw new ServiceUnavailableError(
-      `Request failed after ${this.config.retries} retries: ${lastError?.message || "Unknown error"}`,
+      `Request failed after ${this.config.retries} retries: ${
+        lastError?.message || "Unknown error"
+      }`,
       {
         originalError: lastError?.message,
         errorName: lastError?.name,
@@ -495,7 +526,15 @@ export class HttpClient {
     }
 
     const sanitized = { ...(body as Record<string, unknown>) };
-    const sensitiveFields = ["password", "token", "api_key", "apiKey", "secret", "authorization", "auth"];
+    const sensitiveFields = [
+      "password",
+      "token",
+      "api_key",
+      "apiKey",
+      "secret",
+      "authorization",
+      "auth",
+    ];
 
     for (const field of sensitiveFields) {
       if (field in sanitized) {
@@ -506,5 +545,3 @@ export class HttpClient {
     return sanitized;
   }
 }
-
-
