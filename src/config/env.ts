@@ -37,7 +37,7 @@ export interface EnvConfig {
 
 /**
  * Validates and loads environment configuration
- * 
+ *
  * @throws {Error} If environment variables are invalid
  */
 export function loadEnvConfig(): EnvConfig {
@@ -78,8 +78,13 @@ export function loadEnvConfig(): EnvConfig {
     // Always uses MCP_SERVER_TOKEN for external API authentication
     externalApiKey: mcpServerToken,
     externalApiUrl: validatedEnv.EXTERNAL_API_URL || "http://localhost:5656",
+    // Construct base URL: if EXTERNAL_API_BASE_URL is set, use it; otherwise derive from EXTERNAL_API_URL
+    // ALL endpoints require /api/ prefix (both production and localhost)
     externalApiBaseUrl:
-      validatedEnv.EXTERNAL_API_BASE_URL || "http://localhost:5656/api/",
+      validatedEnv.EXTERNAL_API_BASE_URL ||
+      (validatedEnv.EXTERNAL_API_URL
+        ? `${validatedEnv.EXTERNAL_API_URL}/api/` // Always use /api/ prefix for all environments
+        : "http://localhost:5656/api/"),
 
     // MCP Server Authentication (Required)
     mcpServerToken: mcpServerToken,

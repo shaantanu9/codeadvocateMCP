@@ -26,10 +26,13 @@ export class ExternalApiService {
 
     // Create HTTP client with token in headers
     // Using improved defaults: 60s timeout, 5 retries with exponential backoff
+    // Note: Endpoints already include /api/ prefix, so use externalApiUrl (not externalApiBaseUrl)
+    // Send both X-API-Key and Authorization headers for compatibility
     this.httpClient = httpClient || new HttpClient({
       baseUrl: envConfig.externalApiUrl,
       defaultHeaders: {
         "X-API-Key": token,
+        "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       timeout: 60000, // Increased from 30s to 60s
@@ -52,7 +55,7 @@ export class ExternalApiService {
   }
 
   /**
-   * Get base URL
+   * Get base URL (endpoints already include /api/ prefix)
    */
   getBaseUrl(): string {
     return envConfig.externalApiUrl;

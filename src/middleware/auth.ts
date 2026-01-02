@@ -8,6 +8,9 @@ import {
 /**
  * Authentication middleware for MCP server
  * Verifies token via external API endpoint
+ * 
+ * SECURITY: API key verification is ALWAYS required.
+ * NO BYPASSES - All requests must have valid token verification.
  */
 export async function mcpAuthMiddleware(
   req: Request,
@@ -28,6 +31,7 @@ export async function mcpAuthMiddleware(
     token = req.headers["x-mcp-token"] as string | undefined;
   }
 
+  // SECURITY: ALWAYS require token - NO BYPASSES
   // Check if token is provided
   if (!token) {
     console.warn(
@@ -37,14 +41,15 @@ export async function mcpAuthMiddleware(
       jsonrpc: "2.0",
       error: {
         code: -32001,
-        message: "Unauthorized: MCP server requires authentication token",
+        message: "Unauthorized: MCP server requires authentication token. API key verification is mandatory.",
       },
       id: req.body?.id || null,
     });
     return;
   }
 
-  // Verify token via external API
+  // SECURITY: ALWAYS verify token via external API - NO BYPASSES
+  // Token verification is mandatory regardless of environment or API availability
   const verification = await verifyToken(token);
 
   if (!verification.valid) {

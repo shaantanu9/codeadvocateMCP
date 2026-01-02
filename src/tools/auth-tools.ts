@@ -2,7 +2,7 @@ import { z } from "zod";
 import { envConfig } from "../config/env.js";
 import { textResponse, jsonResponse } from "../utils/response-formatter.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-
+// sk_GVCVDiKHNHkP2XgXHHaOkAgTdYLemgD_UFGdS2f7kps
 /**
  * Register authentication testing tools on the MCP server
  */

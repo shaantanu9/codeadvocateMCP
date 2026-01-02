@@ -87,6 +87,39 @@ export class HttpClient {
   }
 
   /**
+   * Generate curl command for debugging failed requests
+   * Shows full API key for manual testing (this is for debugging purposes)
+   */
+  private generateCurlCommand(
+    url: URL,
+    method: string,
+    headers: Record<string, string>,
+    body?: unknown
+  ): string {
+    const headersList = Object.entries(headers)
+      .map(([key, value]) => {
+        // Show full value for debugging (including API keys)
+        return `-H "${key}: ${value}"`;
+      })
+      .join(" \\\n  ");
+
+    let curlCmd = `curl -X ${method} "${url.toString()}"`;
+    
+    if (headersList) {
+      curlCmd += ` \\\n  ${headersList}`;
+    }
+
+    if (body && ["POST", "PUT", "PATCH"].includes(method)) {
+      const bodyStr = typeof body === "string" ? body : JSON.stringify(body);
+      // Escape single quotes and newlines for shell
+      const escapedBody = bodyStr.replace(/'/g, "'\\''").replace(/\n/g, "\\n");
+      curlCmd += ` \\\n  -d '${escapedBody}'`;
+    }
+
+    return curlCmd;
+  }
+
+  /**
    * Make an HTTP request with retry logic
    */
   async request<T = unknown>(options: HttpRequestOptions): Promise<T> {
@@ -148,6 +181,14 @@ export class HttpClient {
             const errorJson = JSON.parse(errorText);
             errorMessage = errorJson.message || errorJson.error || errorMessage;
             
+            // Generate curl command for manual testing
+            const curlCommand = this.generateCurlCommand(
+              url,
+              options.method,
+              headers,
+              options.body
+            );
+
             // Enhanced error logging for debugging
             logger.error(`HTTP ${options.method} ${url.pathname} failed`, {
               status: response.status,
@@ -161,7 +202,11 @@ export class HttpClient {
               url: url.toString(),
               attempt: attempt + 1,
               maxRetries: this.config.retries,
+              curlCommand, // Include curl command for manual testing
             });
+
+            // Also log curl command separately for easy copy-paste
+            logger.error(`🔧 CURL COMMAND FOR MANUAL TESTING:\n${curlCommand}`);
             
             // Don't retry on client errors (4xx)
             if (response.status < 500) {
@@ -189,6 +234,14 @@ export class HttpClient {
               throw parseError;
             }
             
+            // Generate curl command for manual testing
+            const curlCommand = this.generateCurlCommand(
+              url,
+              options.method,
+              headers,
+              options.body
+            );
+
             // Log parse error
             logger.error(`HTTP ${options.method} ${url.pathname} failed (parse error)`, {
               status: response.status,
@@ -200,7 +253,11 @@ export class HttpClient {
               rawError: errorText.substring(0, 500),
               requestBody: sanitizedBody,
               attempt: attempt + 1,
+              curlCommand, // Include curl command for manual testing
             });
+
+            // Also log curl command separately for easy copy-paste
+            logger.error(`🔧 CURL COMMAND FOR MANUAL TESTING:\n${curlCommand}`);
             
             // Don't retry on client errors (4xx)
             if (response.status < 500) {
@@ -311,6 +368,17 @@ export class HttpClient {
       stack: lastError.stack?.substring(0, 1000),
     } : {};
 
+    // Generate curl command for manual testing
+    const curlCommand = this.generateCurlCommand(
+      url,
+      options.method,
+      {
+        ...this.config.defaultHeaders,
+        ...options.headers,
+      },
+      options.body
+    );
+
     logger.error(`HTTP request failed after ${this.config.retries} retries`, {
       method: options.method,
       endpoint: options.endpoint,
@@ -320,7 +388,11 @@ export class HttpClient {
       totalElapsedTime,
       errorDetails,
       requestBody: sanitizedBody,
+      curlCommand, // Include curl command for manual testing
     });
+
+    // Also log curl command separately for easy copy-paste
+    logger.error(`🔧 CURL COMMAND FOR MANUAL TESTING (after ${this.config.retries} retries):\n${curlCommand}`);
 
     throw new ServiceUnavailableError(
       `Request failed after ${this.config.retries} retries: ${lastError?.message || "Unknown error"}`,
