@@ -9,12 +9,16 @@ import { createApp } from "./app.js";
 import { envConfig } from "../config/env.js";
 import { wellnessScheduler } from "../core/wellness-scheduler.js";
 import * as WellnessTools from "../tools/wellness/index.js";
+import { initializeMcpServer } from "../core/initializer.js";
 
 /**
  * Starts the HTTP server
  * Uses PORT from validated environment configuration (.env file)
  */
 export function startServer(): Server {
+  // Initialize MCP server (creates .cursorrules, cache directories, etc.)
+  initializeMcpServer();
+
   const app = createApp();
   const PORT = envConfig.port;
 

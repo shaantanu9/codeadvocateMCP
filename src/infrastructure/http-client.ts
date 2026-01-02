@@ -26,10 +26,64 @@ export class HttpClient {
     this.config = {
       baseUrl: config.baseUrl,
       defaultHeaders: config.defaultHeaders || {},
-      timeout: config.timeout || 30000,
-      retries: config.retries || 3,
+      timeout: config.timeout || 60000, // Increased from 30s to 60s
+      retries: config.retries || 5, // Increased from 3 to 5
       retryDelay: config.retryDelay || 1000,
     };
+  }
+
+  /**
+   * Check if error is a retryable network error
+   */
+  private isRetryableError(error: unknown): boolean {
+    if (!(error instanceof Error)) {
+      return false;
+    }
+
+    const errorName = error.name;
+    const errorMessage = error.message.toLowerCase();
+
+    // Network errors that should be retried
+    const retryableErrors = [
+      "TypeError", // fetch failed, network errors
+      "AbortError", // timeout errors
+      "NetworkError",
+      "ECONNRESET",
+      "ECONNREFUSED",
+      "ETIMEDOUT",
+      "ENOTFOUND",
+    ];
+
+    // Check error name
+    if (retryableErrors.includes(errorName)) {
+      return true;
+    }
+
+    // Check error message for network-related errors
+    const networkErrorPatterns = [
+      "fetch failed",
+      "network error",
+      "connection",
+      "timeout",
+      "econnreset",
+      "econnrefused",
+      "etimedout",
+      "enotfound",
+      "dns",
+    ];
+
+    return networkErrorPatterns.some((pattern) => errorMessage.includes(pattern));
+  }
+
+  /**
+   * Calculate exponential backoff delay
+   */
+  private calculateBackoffDelay(attempt: number): number {
+    // Exponential backoff: 2^attempt * baseDelay
+    // Cap at 30 seconds max delay
+    const maxDelay = 30000;
+    const delay = Math.pow(2, attempt) * this.config.retryDelay;
+    return Math.min(delay, maxDelay);
   }
 
   /**
@@ -78,8 +132,10 @@ export class HttpClient {
       queryParams: options.queryParams,
     });
 
-    // Retry logic
+    // Retry logic with exponential backoff
     let lastError: Error | null = null;
+    const startTime = Date.now();
+    
     for (let attempt = 0; attempt <= this.config.retries; attempt++) {
       try {
         const response = await fetch(url.toString(), requestOptions);
@@ -103,17 +159,27 @@ export class HttpClient {
               errorDetails: errorJson,
               requestBody: sanitizedBody,
               url: url.toString(),
+              attempt: attempt + 1,
+              maxRetries: this.config.retries,
             });
+            
+            // Don't retry on client errors (4xx)
+            if (response.status < 500) {
+              throw new ExternalApiError(errorMessage, errorJson, response.status);
+            }
             
             // Retry on 5xx errors
             if (response.status >= 500 && attempt < this.config.retries) {
+              const backoffDelay = this.calculateBackoffDelay(attempt);
               logger.warn(`Retrying after ${response.status} error`, {
                 attempt: attempt + 1,
                 maxRetries: this.config.retries,
                 requestId,
                 endpoint: options.endpoint,
+                backoffDelayMs: backoffDelay,
+                elapsedTime: Date.now() - startTime,
               });
-              await this.delay(this.config.retryDelay * (attempt + 1));
+              await this.delay(backoffDelay);
               continue;
             }
 
@@ -133,7 +199,27 @@ export class HttpClient {
               errorMessage,
               rawError: errorText.substring(0, 500),
               requestBody: sanitizedBody,
+              attempt: attempt + 1,
             });
+            
+            // Don't retry on client errors (4xx)
+            if (response.status < 500) {
+              throw new ExternalApiError(errorMessage, { raw: errorText }, response.status);
+            }
+            
+            // Retry on 5xx errors
+            if (response.status >= 500 && attempt < this.config.retries) {
+              const backoffDelay = this.calculateBackoffDelay(attempt);
+              logger.warn(`Retrying after ${response.status} parse error`, {
+                attempt: attempt + 1,
+                maxRetries: this.config.retries,
+                requestId,
+                endpoint: options.endpoint,
+                backoffDelayMs: backoffDelay,
+              });
+              await this.delay(backoffDelay);
+              continue;
+            }
             
             throw new ExternalApiError(errorMessage, { raw: errorText }, response.status);
           }
@@ -145,55 +231,106 @@ export class HttpClient {
           ? await response.json()
           : await response.text();
 
+        const elapsedTime = Date.now() - startTime;
         logger.debug(`HTTP ${options.method} ${url.pathname} success`, {
           status: response.status,
           requestId,
+          attempt: attempt + 1,
+          elapsedTime,
         });
 
         return data as T;
       } catch (error) {
         lastError = error as Error;
+        const elapsedTime = Date.now() - startTime;
 
-        // Don't retry on client errors (4xx) or if it's not a network error
-        if (
-          error instanceof ExternalApiError ||
-          (error as Error).name === "AbortError"
-        ) {
-          if (error instanceof ExternalApiError && error.statusCode < 500) {
+        // Handle ExternalApiError (HTTP errors)
+        if (error instanceof ExternalApiError) {
+          // Don't retry on client errors (4xx)
+          if (error.statusCode < 500) {
             throw error;
           }
-          if (attempt < this.config.retries) {
-            logger.warn(`Retrying after error`, {
+          
+          // Retry on 5xx errors
+          if (error.statusCode >= 500 && attempt < this.config.retries) {
+            const backoffDelay = this.calculateBackoffDelay(attempt);
+            logger.warn(`Retrying after ${error.statusCode} error`, {
               attempt: attempt + 1,
               maxRetries: this.config.retries,
-              error: (error as Error).message,
+              error: error.message,
               requestId,
+              endpoint: options.endpoint,
+              backoffDelayMs: backoffDelay,
+              elapsedTime,
             });
-            await this.delay(this.config.retryDelay * (attempt + 1));
+            await this.delay(backoffDelay);
             continue;
           }
+          
+          // Exhausted retries on 5xx error
+          throw error;
         }
 
-        // If we've exhausted retries, throw the error
-        if (attempt === this.config.retries) {
+        // Handle network errors (fetch failures, timeouts, DNS errors, etc.)
+        if (this.isRetryableError(error) && attempt < this.config.retries) {
+          const backoffDelay = this.calculateBackoffDelay(attempt);
+          const errorDetails = {
+            name: (error as Error).name,
+            message: (error as Error).message,
+            stack: (error as Error).stack?.substring(0, 500),
+          };
+          
+          logger.warn(`Retrying after network error`, {
+            attempt: attempt + 1,
+            maxRetries: this.config.retries,
+            requestId,
+            endpoint: options.endpoint,
+            method: options.method,
+            url: url.toString(),
+            backoffDelayMs: backoffDelay,
+            elapsedTime,
+            errorDetails,
+          });
+          
+          await this.delay(backoffDelay);
+          continue;
+        }
+
+        // If we've exhausted retries or it's not retryable, break
+        if (attempt === this.config.retries || !this.isRetryableError(error)) {
           break;
         }
-
-        // Wait before retry
-        await this.delay(this.config.retryDelay * (attempt + 1));
       }
     }
 
     // If we get here, all retries failed
-    logger.error(`HTTP request failed after ${this.config.retries} retries`, lastError, {
+    const totalElapsedTime = Date.now() - startTime;
+    const errorDetails = lastError ? {
+      name: lastError.name,
+      message: lastError.message,
+      stack: lastError.stack?.substring(0, 1000),
+    } : {};
+
+    logger.error(`HTTP request failed after ${this.config.retries} retries`, {
       method: options.method,
       endpoint: options.endpoint,
+      url: url.toString(),
       requestId,
+      totalRetries: this.config.retries,
+      totalElapsedTime,
+      errorDetails,
+      requestBody: sanitizedBody,
     });
 
     throw new ServiceUnavailableError(
-      `Request failed after ${this.config.retries} retries: ${lastError?.message}`,
-      { originalError: lastError?.message }
+      `Request failed after ${this.config.retries} retries: ${lastError?.message || "Unknown error"}`,
+      {
+        originalError: lastError?.message,
+        errorName: lastError?.name,
+        endpoint: options.endpoint,
+        method: options.method,
+        totalElapsedTime,
+      }
     );
   }
 

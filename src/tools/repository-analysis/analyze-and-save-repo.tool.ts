@@ -827,10 +827,16 @@ class AnalyzeAndSaveRepoTool
         gitConfig,
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      logger.error("Failed to get repository information", {
+        error: errorMessage,
+        stack: errorStack,
+        projectPath,
+        context: "getRepoInfo",
+      });
       throw new Error(
-        `Not a git repository or git not available: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
+        `Not a git repository or git not available: ${errorMessage}`
       );
     }
   }
@@ -2679,6 +2685,14 @@ class AnalyzeAndSaveRepoTool
       throw new Error("Failed to create repository: no ID returned");
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      logger.error("Failed to create repository", {
+        error: errorMsg,
+        stack: errorStack,
+        repositoryName: repoInfo.name,
+        remoteUrl: repoInfo.remoteUrl,
+        context: "ensureRepositoryExists",
+      });
       throw new Error(`Failed to create repository: ${errorMsg}`);
     }
   }
@@ -2772,6 +2786,14 @@ class AnalyzeAndSaveRepoTool
       throw new Error("Failed to create project: no ID returned");
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      logger.error("Failed to create project", {
+        error: errorMsg,
+        stack: errorStack,
+        repositoryId,
+        projectName: repoInfo.name,
+        context: "ensureProjectExists",
+      });
       throw new Error(`Failed to create project: ${errorMsg}`);
     }
   }
@@ -3269,12 +3291,20 @@ Provide a comprehensive analysis in JSON format.`;
           } else {
             logger.info(`✅ Saved ${doc.filename} as markdown document`);
           }
-        } catch (error) {
-          logger.warn(`❌ Failed to save ${doc.filename} as markdown`, {
-            error: error instanceof Error ? error.message : String(error),
-          });
-          // Continue with other docs
-        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        logger.error(`Failed to save documentation file: ${doc.filename}`, {
+          error: errorMsg,
+          stack: errorStack,
+          filename: doc.filename,
+          docType: doc.type,
+          repositoryId: finalRepositoryId,
+          projectId: finalProjectId,
+          context: "saveKnowledgeToAPI.documentation",
+        });
+        // Continue with other docs
+      }
       }
       // Update progress
       if (progress && checkpointId) {
@@ -3343,8 +3373,14 @@ Provide a comprehensive analysis in JSON format.`;
           }
         }
       } catch (error) {
-        logger.warn("❌ Failed to generate Mermaid diagrams", {
-          error: error instanceof Error ? error.message : String(error),
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        logger.error("Failed to generate Mermaid diagrams", {
+          error: errorMsg,
+          stack: errorStack,
+          repositoryId: finalRepositoryId,
+          projectId: finalProjectId,
+          context: "saveKnowledgeToAPI.mermaidDiagrams",
         });
       }
       // Update progress
@@ -3436,8 +3472,14 @@ Provide a comprehensive analysis in JSON format.`;
           logger.info("✅ Saved coding standards as documentation");
         }
       } catch (error) {
-        logger.warn("❌ Failed to save coding standards", {
-          error: error instanceof Error ? error.message : String(error),
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        logger.error("Failed to save coding standards", {
+          error: errorMsg,
+          stack: errorStack,
+          repositoryId: finalRepositoryId,
+          projectId: finalProjectId,
+          context: "saveKnowledgeToAPI.codingStandards",
         });
       }
       // Update progress
@@ -3527,8 +3569,15 @@ Provide a comprehensive analysis in JSON format.`;
           );
         }
       } catch (error) {
-        logger.warn("❌ Failed to save routes", {
-          error: error instanceof Error ? error.message : String(error),
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        logger.error("Failed to save routes", {
+          error: errorMsg,
+          stack: errorStack,
+          routesCount: comprehensiveAnalysis.routes.length,
+          repositoryId: finalRepositoryId,
+          projectId: finalProjectId,
+          context: "saveKnowledgeToAPI.routes",
         });
       }
     } else {
@@ -3578,8 +3627,14 @@ Provide a comprehensive analysis in JSON format.`;
           );
         }
       } catch (error) {
-        logger.warn("❌ Failed to save folder structure", {
-          error: error instanceof Error ? error.message : String(error),
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        logger.error("Failed to save folder structure", {
+          error: errorMsg,
+          stack: errorStack,
+          repositoryId: finalRepositoryId,
+          projectId: finalProjectId,
+          context: "saveKnowledgeToAPI.folderStructure",
         });
       }
     }
@@ -4078,8 +4133,18 @@ ${repoInfo.remoteUrl ? `\n**Repository:** ${repoInfo.remoteUrl}` : ""}`;
           }
         }
       } catch (error) {
-        logger.warn(`❌ Failed to save function ${func.name}`, {
-          error: error instanceof Error ? error.message : String(error),
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        logger.error(`Failed to save utility function: ${func.name}`, {
+          error: errorMsg,
+          stack: errorStack,
+          functionName: func.name,
+          functionCategory: func.category,
+          filePath: func.filePath,
+          lineNumber: func.lineNumber,
+          repositoryId: finalRepositoryId,
+          projectId: finalProjectId,
+          context: "saveKnowledgeToAPI.snippets.utilityFunctions",
         });
         // Continue with other functions
       }
@@ -4207,8 +4272,18 @@ ${repoInfo.remoteUrl ? `\n**Repository:** ${repoInfo.remoteUrl}` : ""}`;
           }
         }
       } catch (error) {
-        logger.debug(`Failed to save function ${func.name}`, {
-          error: error instanceof Error ? error.message : String(error),
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        logger.error(`Failed to save important function: ${func.name}`, {
+          error: errorMsg,
+          stack: errorStack,
+          functionName: func.name,
+          functionCategory: func.category,
+          filePath: func.filePath,
+          lineNumber: func.lineNumber,
+          repositoryId: finalRepositoryId,
+          projectId: finalProjectId,
+          context: "saveKnowledgeToAPI.snippets.importantFunctions",
         });
         // Continue with other functions
       }
@@ -4260,8 +4335,15 @@ This configuration includes all detected API endpoints, their methods, paths, an
         }
         logger.debug("✅ Saved routes as code snippet");
       } catch (error) {
-        logger.warn("❌ Failed to save routes snippet", {
-          error: error instanceof Error ? error.message : String(error),
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        logger.error("Failed to save routes snippet", {
+          error: errorMsg,
+          stack: errorStack,
+          routesCount: comprehensiveAnalysis.routes.length,
+          repositoryId: finalRepositoryId,
+          projectId: finalProjectId,
+          context: "saveKnowledgeToAPI.snippets.routes",
         });
       }
     } else if (progress?.steps.snippets?.routes.saved) {
@@ -4273,8 +4355,7 @@ This configuration includes all detected API endpoints, their methods, paths, an
     if (
       progress?.steps.snippets?.keyFiles.saved ===
         progress?.steps.snippets?.keyFiles.total &&
-      progress?.steps.snippets?.keyFiles.total &&
-      progress.steps.snippets.keyFiles.total > 0
+      progress?.steps.snippets?.keyFiles.total > 0
     ) {
       logger.info(
         `⏭️  Skipping key files (${progress.steps.snippets.keyFiles.saved} already saved)`
@@ -4355,8 +4436,16 @@ ${repoInfo.remoteUrl ? `\n**Repository:** ${repoInfo.remoteUrl}` : ""}`;
               }
             }
           } catch (error) {
-            logger.warn(`❌ Failed to save snippet for ${file.path}`, {
-              error: error instanceof Error ? error.message : String(error),
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            logger.error(`Failed to save key file snippet: ${file.path}`, {
+              error: errorMsg,
+              stack: errorStack,
+              filePath: file.path,
+              language: file.language,
+              repositoryId: finalRepositoryId,
+              projectId: finalProjectId,
+              context: "saveKnowledgeToAPI.snippets.keyFiles",
             });
             // Continue with other files
           }
@@ -4367,8 +4456,14 @@ ${repoInfo.remoteUrl ? `\n**Repository:** ${repoInfo.remoteUrl}` : ""}`;
           progress.steps.snippets.keyFiles.total = keyFiles.length;
         }
       } catch (error) {
-        logger.warn("❌ Failed to save code file snippets", {
-          error: error instanceof Error ? error.message : String(error),
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        logger.error("Failed to save code file snippets", {
+          error: errorMsg,
+          stack: errorStack,
+          repositoryId: finalRepositoryId,
+          projectId: finalProjectId,
+          context: "saveKnowledgeToAPI.snippets.keyFiles",
         });
       }
     }
@@ -4852,14 +4947,22 @@ ${repoInfo.remoteUrl ? `\n**Repository:** ${repoInfo.remoteUrl}` : ""}`;
         apiDocumentationId = savedKnowledge.documentationId;
         apiMarkdownId = savedKnowledge.markdownId;
       } catch (error) {
-        logger.warn("Failed to save to API, but continuing with cache", {
-          error: error instanceof Error ? error.message : String(error),
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+        logger.error("Failed to save knowledge to API", {
+          error: errorMsg,
+          stack: errorStack,
+          repositoryName: repoInfo.name,
+          repositoryId: finalRepositoryId,
+          projectId: finalProjectId,
+          checkpointId: checkpointId,
+          context: "execute.saveKnowledgeToAPI",
         });
         // Record error in progress
         if (!progress.errors) progress.errors = [];
         progress.errors.push({
           step: "saveKnowledgeToAPI",
-          error: error instanceof Error ? error.message : String(error),
+          error: errorMsg,
           timestamp: new Date().toISOString(),
         });
         progress.status = "failed";
@@ -5031,6 +5134,16 @@ ${repoInfo.remoteUrl ? `\n**Repository:** ${repoInfo.remoteUrl}` : ""}`;
         successMessage
       );
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      logger.error("Critical error in analyzeAndSaveRepository", {
+        error: errorMsg,
+        stack: errorStack,
+        projectPath: params.projectPath || process.cwd(),
+        checkpointId: checkpointId,
+        resume: params.resume,
+        context: "execute",
+      });
       return this.handleError(
         this.name,
         error,

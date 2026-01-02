@@ -67,7 +67,9 @@ Please check your token and try again.
         }
       } catch (error) {
         return textResponse(
-          `❌ Error validating token: ${error instanceof Error ? error.message : "Unknown error"}`
+          `❌ Error validating token: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
         );
       }
     }
@@ -125,7 +127,9 @@ Please check your token and try again.
 **Token Length:** ${tokenLength} characters
 **Token Preview:** ${tokenPreview}
 **Strength:** ${strength}
-**Character Types:** Letters: ${hasLetters ? "Yes" : "No"}, Numbers: ${hasNumbers ? "Yes" : "No"}, Special: ${hasSpecial ? "Yes" : "No"}
+**Character Types:** Letters: ${hasLetters ? "Yes" : "No"}, Numbers: ${
+            hasNumbers ? "Yes" : "No"
+          }, Special: ${hasSpecial ? "Yes" : "No"}
 
 **Authentication:** Required for all MCP requests
 
@@ -133,7 +137,9 @@ Please check your token and try again.
         );
       } catch (error) {
         return textResponse(
-          `❌ Error getting token info: ${error instanceof Error ? error.message : "Unknown error"}`
+          `❌ Error getting token info: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
         );
       }
     }
@@ -171,13 +177,11 @@ Please check your token and try again.
         );
       } catch (error) {
         return textResponse(
-          `❌ Error testing authentication: ${error instanceof Error ? error.message : "Unknown error"}`
+          `❌ Error testing authentication: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
         );
       }
     }
   );
 }
-
-
-
-

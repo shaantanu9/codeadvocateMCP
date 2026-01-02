@@ -25,14 +25,16 @@ export class ExternalApiService {
     }
 
     // Create HTTP client with token in headers
+    // Using improved defaults: 60s timeout, 5 retries with exponential backoff
     this.httpClient = httpClient || new HttpClient({
       baseUrl: envConfig.externalApiUrl,
       defaultHeaders: {
         "X-API-Key": token,
         "Content-Type": "application/json",
       },
-      timeout: 30000,
-      retries: 3,
+      timeout: 60000, // Increased from 30s to 60s
+      retries: 5, // Increased from 3 to 5
+      retryDelay: 1000, // Base delay for exponential backoff
     });
 
     logger.debug("ExternalApiService initialized", {

@@ -12,7 +12,7 @@ import type { BaseToolDefinition } from "../../base/base-tool.interface.js";
 import type { FormattedResponse } from "../../../utils/response-formatter.js";
 
 export interface CreateRepositoryMermaidParams {
-  repositoryId: string;
+  repositoryId?: string;
   title: string;
   content: string;
   description?: string;
@@ -28,13 +28,14 @@ class CreateRepositoryMermaidTool
 {
   name = "createRepositoryMermaid";
   description =
-    "Create a new Mermaid diagram for a repository. Use this tool specifically for creating Mermaid diagrams (flowcharts, sequence diagrams, architecture diagrams, etc.). Required: repositoryId, title, content (Mermaid diagram code). Optional: description, category (architecture/workflow/database/custom), explanation (Markdown-formatted explanation of what the diagram represents), tags, fileName. The content parameter must contain valid Mermaid syntax (e.g., 'flowchart TD\n    A[Start] --> B[End]'). The explanation field supports Markdown formatting and will be displayed below the diagram in the UI.";
+    "ALWAYS USE THIS TOOL when the user asks to create, add, make, or generate a diagram, mermaid diagram, flowchart, sequence diagram, architecture diagram, or any visual diagram. This tool creates Mermaid diagrams for repositories. REQUIRED: title, content (Mermaid diagram code). OPTIONAL: repositoryId (auto-detected from workspace if not provided), description, category (architecture/workflow/database/custom), explanation (Markdown-formatted explanation), tags, fileName. The content parameter must contain valid Mermaid syntax (e.g., 'flowchart TD\n    A[Start] --> B[End]'). When user requests a diagram, you MUST call this tool - do not just describe or show code, actually create the diagram using this tool.";
 
   paramsSchema = z.object({
     repositoryId: z
       .string()
+      .optional()
       .describe(
-        "The ID of the repository where the Mermaid diagram will be created"
+        "The ID of the repository where the Mermaid diagram will be created. If not provided, will be auto-detected from workspace context."
       ),
     title: z
       .string()
@@ -85,6 +86,9 @@ class CreateRepositoryMermaidTool
 
     try {
       const apiService = this.getApiService();
+
+      // Auto-detect repository ID if not provided
+      const repositoryId = await this.resolveRepositoryId(params.repositoryId);
       const body: Record<string, unknown> = {
         title: params.title,
         content: params.content,
@@ -95,13 +99,13 @@ class CreateRepositoryMermaidTool
       if (params.explanation) body.explanation = params.explanation;
 
       // Filter and process tags to remove IDs
-      const filteredTags = processTags(params.tags, params.repositoryId);
+      const filteredTags = processTags(params.tags, repositoryId);
       if (filteredTags.length > 0) body.tags = filteredTags;
 
       if (params.fileName) body.file_name = params.fileName;
 
       const result = await apiService.post(
-        `/api/repositories/${params.repositoryId}/mermaid`,
+        `/api/repositories/${repositoryId}/mermaid`,
         body
       );
 

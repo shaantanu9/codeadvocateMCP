@@ -1,0 +1,112 @@
+# Cursor Rules for MCP Server
+
+## Critical Tool Usage Rules
+
+### 1. Mermaid Diagram Creation - ALWAYS USE THE TOOL
+When a user asks to:
+- "create a diagram"
+- "add a mermaid diagram"
+- "make a flowchart"
+- "generate a sequence diagram"
+- "create an architecture diagram"
+- "add a visual diagram"
+- Any variation of creating/adding/making diagrams
+
+**YOU MUST:**
+1. Call the `createRepositoryMermaid` tool immediately
+2. Do NOT just describe or show code - actually create the diagram
+3. Auto-detect repositoryId from workspace if not provided
+4. Generate proper Mermaid syntax for the requested diagram type
+5. Include a clear title and explanation
+
+**DO NOT:**
+- Just show Mermaid code without calling the tool
+- Ask the user to create it manually
+- Skip creating the diagram
+
+### 2. Automatic Context Retrieval - ALWAYS RETRIEVE CONTEXT FIRST
+
+Before answering ANY question about:
+- Codebase structure
+- Repository information
+- Implementation details
+- Architecture patterns
+- Functionality
+- Any technical question
+
+**YOU MUST:**
+1. First call `getRepoContext` or `getCachedRepoAnalysis` to retrieve saved knowledge
+2. Search for relevant documentation using `listMarkdownDocuments` or `listDocumentations`
+3. If needed, search online using web search tools for current information
+4. Use the retrieved context to provide accurate, informed answers
+
+**Context Retrieval Priority:**
+1. Check local cache first (`getCachedRepoAnalysis`)
+2. Get repository context from API (`getRepoContext`)
+3. Search documentation and markdown files
+4. Search online if information is not available locally
+5. Combine all sources for comprehensive answers
+
+### 3. Web Search Integration
+
+When:
+- Information is not available in local context
+- User asks about current technologies, libraries, or best practices
+- Need to verify or get latest information
+- Solving problems that require external knowledge
+
+**YOU MUST:**
+- Use web search tools to find current information
+- Combine web search results with local context
+- Provide accurate, up-to-date answers
+
+### 4. Repository ID Auto-Detection
+
+Most repository tools support auto-detection of `repositoryId`:
+- If `repositoryId` is not provided, tools will auto-detect from workspace
+- Workspace detection uses git remote URL, repository name, or workspace path
+- Always try to use tools without requiring explicit repositoryId when possible
+
+### 5. Tool Calling Best Practices
+
+**When to call tools:**
+- Always call tools when user explicitly requests an action (create, add, get, list, etc.)
+- Retrieve context before answering questions
+- Search online when local context is insufficient
+- Use tools proactively to gather information
+
+**Tool calling patterns:**
+- For questions → Retrieve context first, then answer
+- For actions → Call the appropriate tool immediately
+- For diagrams → Always call `createRepositoryMermaid`
+- For searches → Use multiple tools to gather comprehensive information
+
+## Example Workflows
+
+### User asks: "Create a flowchart showing the authentication flow"
+1. ✅ Call `createRepositoryMermaid` with:
+   - title: "Authentication Flow"
+   - content: [proper Mermaid flowchart syntax]
+   - category: "workflow"
+   - Auto-detect repositoryId
+
+### User asks: "How does authentication work in this codebase?"
+1. ✅ Call `getRepoContext` with search: "authentication"
+2. ✅ Call `getCachedRepoAnalysis` if available
+3. ✅ Search markdown documents for authentication docs
+4. ✅ Combine all context
+5. ✅ Provide comprehensive answer based on retrieved context
+
+### User asks: "What's the best way to implement rate limiting?"
+1. ✅ Retrieve local context about rate limiting if exists
+2. ✅ Search online for current best practices
+3. ✅ Combine local patterns with online best practices
+4. ✅ Provide informed recommendation
+
+## Important Notes
+
+- **Never skip tool calls** - If a tool exists for a task, use it
+- **Always retrieve context** - Don't guess, retrieve actual data
+- **Combine sources** - Use local context + web search for best results
+- **Auto-detect when possible** - Don't require explicit IDs when tools support auto-detection
+- **Be proactive** - Retrieve context and search online without being asked
