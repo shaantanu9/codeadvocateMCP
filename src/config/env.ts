@@ -1,9 +1,19 @@
 import dotenv from "dotenv";
 import { z } from "zod";
 import { envSchema, type ValidatedEnv } from "./env.schema.js";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
 
-// Load environment variables
-dotenv.config();
+// Get the directory of the current file (dist/config or src/config)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Resolve .env path relative to project root (go up from dist/config or src/config to root)
+// This works whether running from src/ or dist/
+const envPath = resolve(__dirname, "../../.env");
+
+// Load environment variables from project root
+dotenv.config({ path: envPath });
 
 export interface EnvConfig {
   // AI Provider API Keys
@@ -129,10 +139,12 @@ export function loadEnvConfig(): EnvConfig {
   }
 
   // Log external API configuration
+  console.log(`[Config] External API URL: ${config.externalApiUrl}`);
   console.log(`[Config] External API Base URL: ${config.externalApiBaseUrl}`);
   console.log(
     `[Config] Token Verification Endpoint: ${config.externalApiBaseUrl}api-keys/verify`
   );
+  console.log(`[Config] .env file loaded from: ${envPath}`);
 
   if (config.externalApiKey && config.externalApiKey !== "not-required") {
     console.log(
