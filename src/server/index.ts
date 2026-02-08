@@ -47,25 +47,93 @@ export function startServer(): Server {
 }
 
 /**
+ * Track in-flight requests for graceful shutdown
+ */
+let inFlightRequests = 0;
+let isShuttingDown = false;
+
+/**
  * Sets up graceful shutdown handlers for the server
+ * Tracks in-flight requests and waits for them to complete
  */
 function setupGracefulShutdown(server: Server) {
-  const shutdown = (signal: string) => {
+  // Track request lifecycle
+  server.on("request", () => {
+    if (!isShuttingDown) {
+      inFlightRequests++;
+    }
+  });
+
+  const shutdown = async (signal: string) => {
+    if (isShuttingDown) {
+      console.log("[Server] Shutdown already in progress, forcing exit...");
+      process.exit(1);
+      return;
+    }
+
+    isShuttingDown = true;
     console.log(`\n[Server] Received ${signal}, shutting down gracefully...`);
+    console.log(`[Server] In-flight requests: ${inFlightRequests}`);
+
+    // Stop accepting new connections
+    server.close(() => {
+      console.log("[Server] HTTP server closed (no longer accepting connections)");
+    });
 
     // Stop wellness scheduler
     wellnessScheduler.stop();
+    console.log("[Server] Wellness scheduler stopped");
 
-    server.close(() => {
-      console.log("[Server] HTTP server closed");
-      process.exit(0);
-    });
+    // Wait for in-flight requests to complete
+    const maxWaitTime = 10000; // 10 seconds
+    const checkInterval = 100; // Check every 100ms
+    const startTime = Date.now();
 
-    // Force shutdown after 10 seconds
-    setTimeout(() => {
-      console.error("[Server] Forced shutdown after timeout");
-      process.exit(1);
-    }, 10000);
+    const waitForRequests = () => {
+      return new Promise<void>((resolve) => {
+        const checkRequests = () => {
+          if (inFlightRequests === 0) {
+            console.log("[Server] All requests completed");
+            resolve();
+            return;
+          }
+
+          const elapsed = Date.now() - startTime;
+          if (elapsed >= maxWaitTime) {
+            console.warn(
+              `[Server] Timeout waiting for requests. ${inFlightRequests} requests still in flight`
+            );
+            resolve();
+            return;
+          }
+
+          setTimeout(checkRequests, checkInterval);
+        };
+
+        checkRequests();
+      });
+    };
+
+    await waitForRequests();
+
+    console.log("[Server] Graceful shutdown complete");
+    process.exit(0);
+  };
+
+  // Helper to decrement in-flight requests when response is sent
+  const originalEmit = server.emit.bind(server);
+  server.emit = function (event: string, ...args: unknown[]) {
+    if (event === "request" && args[1]) {
+      const res = args[1] as { end?: () => void; once?: (event: string, fn: () => void) => void };
+      if (res.once && typeof res.once === "function") {
+        res.once("finish", () => {
+          if (inFlightRequests > 0) {
+            inFlightRequests--;
+          }
+        });
+      }
+    }
+    return originalEmit(event, ...args);
   };
 
   process.on("SIGTERM", () => shutdown("SIGTERM"));

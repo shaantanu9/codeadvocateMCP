@@ -1,9 +1,112 @@
-# Cursor Rules for MCP Server
+# CodeAdvocate MCP Server - Tool Usage Guide
 
-## Critical Tool Usage Rules
+This repository is connected to the **CodeAdvocate MCP Server**, which provides powerful tools for managing code knowledge, repository analysis, documentation, and collaborative development. This guide helps you understand and use these tools effectively.
 
-### 1. Mermaid Diagram Creation - ALWAYS USE THE TOOL
-When a user asks to:
+---
+
+## 🎯 What is CodeAdvocate MCP?
+
+The CodeAdvocate MCP Server integrates with your repository to provide:
+
+- **Repository Analysis** - Understand codebase structure, patterns, and dependencies
+- **Knowledge Management** - Store and retrieve code snippets, learnings, patterns, and errors
+- **Documentation** - Create and manage markdown documents, diagrams, and templates
+- **Collaboration** - Track feedback, errors, learnings, and team knowledge
+- **Visual Diagrams** - Create and store Mermaid diagrams for architecture, workflows, and more
+
+---
+
+## 🚀 Getting Started
+
+### First Time Setup
+
+When working in this repository for the first time:
+
+1. **Analyze the Repository**
+
+   - Use `analyzeAndSaveRepository` to understand the codebase structure
+   - This creates a knowledge base that can be retrieved later
+
+2. **Retrieve Context**
+
+   - Always use `getRepositoryContext` or `getCachedRepoAnalysis` before answering questions
+   - This ensures you have accurate information about the codebase
+
+3. **Explore Available Knowledge**
+   - Check `listRepositoryLearnings` for documented solutions
+   - Review `listRepositoryPatterns` for coding patterns
+   - Look at `listRepositoryErrors` for known issues and solutions
+
+---
+
+## 📚 Core Tool Categories
+
+### 1. Repository Analysis & Context (5 tools)
+
+**Purpose:** Understand and retrieve knowledge about this codebase
+
+#### `analyzeAndSaveRepository`
+
+Analyze this repository and save knowledge for future reference.
+
+**When to use:**
+
+- First time working with this repository
+- After major refactoring or changes
+- When you need a comprehensive understanding of the codebase
+
+**Example:**
+
+```
+User: "Analyze this repository and save the knowledge"
+→ Call analyzeAndSaveRepository (repositoryName auto-detected)
+```
+
+#### `getRepositoryContext` ⭐ **USE THIS FIRST**
+
+Get saved knowledge and context about this repository.
+
+**When to use:**
+
+- **BEFORE answering ANY technical question about this codebase**
+- When you need to understand how something works
+- When looking for documented patterns or solutions
+
+**Example:**
+
+```
+User: "How does authentication work in this codebase?"
+→ First call getRepositoryContext with search: "authentication"
+→ Then provide answer based on retrieved context
+```
+
+#### `getCachedRepoAnalysis`
+
+Get previously analyzed repository data from local cache (faster).
+
+**When to use:**
+
+- Quick access to cached analysis data
+- When you need fast context without API calls
+
+#### `listCachedRepositories`
+
+See which repositories have been analyzed.
+
+#### `listCheckpoints`
+
+View analysis history and checkpoints for this repository.
+
+---
+
+### 2. Visual Diagrams (5 tools) ⭐ **CRITICAL**
+
+**Purpose:** Create and manage visual diagrams (flowcharts, architecture diagrams, etc.)
+
+#### `createRepositoryMermaid` ⭐ **ALWAYS USE THIS FOR DIAGRAMS**
+
+**When user asks to:**
+
 - "create a diagram"
 - "add a mermaid diagram"
 - "make a flowchart"
@@ -13,100 +116,720 @@ When a user asks to:
 - Any variation of creating/adding/making diagrams
 
 **YOU MUST:**
-1. Call the `createRepositoryMermaid` tool immediately
-2. Do NOT just describe or show code - actually create the diagram
-3. Auto-detect repositoryId from workspace if not provided
-4. Generate proper Mermaid syntax for the requested diagram type
-5. Include a clear title and explanation
+
+1. Call `createRepositoryMermaid` immediately
+2. Do NOT just show code - actually create the diagram
+3. Auto-detect repositoryId from workspace (don't require it)
+4. Generate proper Mermaid syntax
+5. Include clear title and explanation
+
+**Required Parameters:**
+
+- `title` - Title of the diagram
+- `content` - Valid Mermaid syntax (e.g., `flowchart TD\n    A[Start] --> B[End]`)
+
+**Optional Parameters:**
+
+- `repositoryId` - Auto-detected from workspace if not provided
+- `description` - Description of the diagram
+- `category` - "architecture", "workflow", "database", or "custom"
+- `explanation` - Markdown explanation of the diagram
+- `tags` - Array of tags for categorization
+- `fileName` - Custom file name
+
+**Example:**
+
+```
+User: "Create a flowchart showing the user registration process"
+→ Call createRepositoryMermaid with:
+  - title: "User Registration Flow"
+  - content: [proper Mermaid flowchart syntax]
+  - category: "workflow"
+  - repositoryId: auto-detected
+```
+
+#### Other Mermaid Tools:
+
+- `listRepositoryMermaid` - List all diagrams for this repository
+- `getRepositoryMermaid` - Get a specific diagram by ID
+- `updateRepositoryMermaid` - Update an existing diagram
+- `deleteRepositoryMermaid` - Delete a diagram
+
+---
+
+### 3. Code Knowledge & Patterns (15 tools)
+
+**Purpose:** Store and retrieve code snippets, patterns, learnings, and error solutions
+
+#### Code Snippets (11 tools)
+
+- `listSnippets` - Search for code snippets by language, tags, or keywords
+- `getSnippet` - Get a specific snippet by ID
+- `createSnippet` - Save a code snippet for future reference
+- `updateSnippet` - Update an existing snippet
+- `getRecentSnippets` - Get recently created snippets
+- `getTrendingSnippets` - Get popular/trending snippets
+- `getPublicSnippets` - Get public snippets
+- `toggleFavoriteSnippet` - Mark snippets as favorites
+- `archiveSnippet` - Archive snippets
+
+**When to use:**
+
+- Finding code examples
+- Saving useful code patterns
+- Sharing code with team
+
+#### Repository Patterns (5 tools)
+
+- `listRepositoryPatterns` - List coding patterns documented for this repository
+- `createRepositoryPattern` - Document a coding pattern
+- `getRepositoryPattern` - Get a specific pattern
+- `updateRepositoryPattern` - Update a pattern
+- `deleteRepositoryPattern` - Delete a pattern
+
+**When to use:**
+
+- Looking for established patterns in this codebase
+- Documenting new patterns you discover
+- Understanding architectural decisions
+
+**Example:**
+
+```
+User: "What patterns do we use for error handling?"
+→ Call listRepositoryPatterns with search: "error handling"
+```
+
+#### Repository Learnings (5 tools)
+
+- `listRepositoryLearnings` - List documented learnings for this repository
+- `createRepositoryLearning` - Document something you learned
+- `getRepositoryLearning` - Get a specific learning
+- `updateRepositoryLearning` - Update a learning
+- `deleteRepositoryLearning` - Delete a learning
+
+**When to use:**
+
+- Finding solutions to problems encountered before
+- Documenting important discoveries
+- Sharing knowledge with team
+
+**Example:**
+
+```
+User: "How did we solve the database connection issue?"
+→ Call listRepositoryLearnings with search: "database connection"
+```
+
+#### Repository Errors (5 tools)
+
+- `listRepositoryErrors` - List error logs and solutions
+- `createRepositoryError` - Log an error with solution
+- `getRepositoryError` - Get a specific error log
+- `updateRepositoryError` - Update error information
+- `deleteRepositoryError` - Delete an error log
+
+**When to use:**
+
+- Finding solutions to errors encountered before
+- Documenting new errors and their solutions
+- Learning from past mistakes
+
+**Example:**
+
+```
+User: "What errors have we encountered with authentication?"
+→ Call listRepositoryErrors (repositoryId auto-detected)
+→ Filter for authentication-related errors
+```
+
+---
+
+### 4. Documentation & Files (9 tools)
+
+**Purpose:** Manage documentation, markdown files, and repository files
+
+#### Documentation (5 tools)
+
+- `listDocumentations` - List documentation entries
+- `getDocumentation` - Get specific documentation
+- `createDocumentation` - Create documentation
+- `updateDocumentation` - Update documentation
+- `getMcpContext` - Get MCP-specific context
+
+#### Markdown Documents (4 tools)
+
+- `listMarkdownDocuments` - List markdown documents
+- `getMarkdownDocument` - Get specific markdown
+- `createMarkdownDocument` - Create markdown document
+- `updateMarkdownDocument` - Update markdown document
+
+#### Repository Files (5 tools)
+
+- `listRepositoryFiles` - List files stored in repository
+- `createRepositoryFile` - Create a file (markdown, text, json, yaml, xml)
+- `getRepositoryFile` - Get a specific file
+- `updateRepositoryFile` - Update a file
+- `deleteRepositoryFile` - Delete a file
+
+**When to use:**
+
+- Managing project documentation
+- Storing configuration files
+- Creating guides and tutorials
+
+---
+
+### 5. Repository Management (34 tools)
+
+**Purpose:** Manage repository settings, rules, prompts, and collaboration
+
+#### Repository CRUD (4 tools)
+
+- `listRepositories` - List accessible repositories
+- `getRepository` - Get repository details
+- `createRepository` - Create a new repository
+- `updateRepository` - Update repository information
+
+#### Repository Rules (5 tools)
+
+- `listRepositoryRules` - List coding standards and rules
+- `createRepositoryRule` - Create a rule (coding_standard, naming_convention, architecture, security, performance, testing, documentation, git_workflow, other)
+- `getRepositoryRule` - Get a specific rule
+- `updateRepositoryRule` - Update a rule
+- `setupMcpGuidanceRules` - Set up default MCP guidance rules
+
+**When to use:**
+
+- Understanding coding standards for this repository
+- Documenting new rules or conventions
+- Ensuring code follows established patterns
+
+#### Repository Prompts (4 tools)
+
+- `listRepositoryPrompts` - List saved prompts
+- `createRepositoryPrompt` - Create a prompt (code_generation, code_review, documentation, refactoring, testing, debugging, explanation, other)
+- `getRepositoryPrompt` - Get a specific prompt
+- `updateRepositoryPrompt` - Update a prompt
+
+#### Repository PR Rules (4 tools)
+
+- `listRepositoryPrRules` - List PR review rules
+- `createRepositoryPrRule` - Create a PR rule
+- `getRepositoryPrRule` - Get a specific PR rule
+- `updateRepositoryPrRule` - Update a PR rule
+
+#### Repository Feedback (7 tools)
+
+- `listRepositoryFeedback` - List feedback items (bug reports, feature requests, etc.)
+- `getRepositoryFeedbackStats` - Get feedback statistics
+- `createRepositoryFeedback` - Create feedback (bug_report, feature_request, improvement, documentation, performance, security, ux_ui, other)
+- `getRepositoryFeedback` - Get specific feedback
+- `getRepositoryFeedbackNotifications` - Get notifications
+- `listRepositoryFeedbackSavedFilters` - List saved filters
+- `createRepositoryFeedbackSavedFilter` - Create a saved filter
+
+**When to use:**
+
+- Reporting bugs or issues
+- Requesting features
+- Tracking improvements
+- Managing feedback workflow
+
+---
+
+### 6. Collections & Organization (8 tools)
+
+**Purpose:** Organize code snippets into collections
+
+- `listCollections` - List collections
+- `createCollection` - Create a collection
+- `getCollection` - Get collection details
+- `updateCollection` - Update collection
+- `deleteCollection` - Delete collection
+- `listCollectionSnippets` - List snippets in a collection
+- `addSnippetToCollection` - Add snippet to collection
+- `removeSnippetFromCollection` - Remove snippet from collection
+
+**When to use:**
+
+- Organizing related code snippets
+- Creating reusable code libraries
+- Grouping code by feature or pattern
+
+---
+
+### 7. Discovery & Search (8 tools)
+
+**Purpose:** Discover and search for code, patterns, and knowledge
+
+- `listSnippets` - Search snippets by language, tags, keywords
+- `getPublicSnippets` - Get public snippets
+- `getTrendingSnippets` - Get popular snippets
+- `getRecentSnippets` - Get recently created snippets
+- `explorePublicContent` - Explore public content
+- `getPopularItems` - Get popular/trending items
+- `searchPersonalKnowledge` - Search personal knowledge base
+- `getCodeSnippetsByTags` - Get snippets by tags
+
+**When to use:**
+
+- Finding code examples
+- Discovering best practices
+- Learning from community knowledge
+
+---
+
+### 8. Teams & Collaboration (3 tools)
+
+- `listTeams` - List teams
+- `getTeamMembers` - Get team members
+- `getTeamProjects` - Get team projects
+
+---
+
+### 9. Analytics & Activity (3 tools)
+
+- `getActivity` - Get activity data
+- `getAnalytics` - Get analytics and statistics
+- `getPopularItems` - Get popular items
+
+---
+
+### 10. Session & Workspace (8+ tools)
+
+- `getWorkspaceInfo` - Get current workspace information
+- `getClientInfo` - Get client/editor information
+- `getSessionData` - Get session data
+- `setSessionData` - Set session data
+- `getCache` - Get cached data
+- `setCache` - Set cached data
+- `getAllSessionData` - Get all session data
+- `clearSessionData` - Clear session data
+
+---
+
+## 🎯 Critical Usage Rules
+
+### Rule 1: Always Retrieve Context First ⭐
+
+**BEFORE answering ANY question about this codebase:**
+
+1. Call `getRepositoryContext` with relevant search terms
+2. Or use `getCachedRepoAnalysis` for faster cached data
+3. Search documentation using `listMarkdownDocuments` or `listDocumentations`
+4. Use retrieved context to provide accurate answers
 
 **DO NOT:**
+
+- Guess or make assumptions
+- Answer without checking available knowledge
+- Skip context retrieval
+
+**Example:**
+
+```
+User: "How does the authentication system work?"
+→ ✅ First: getRepositoryContext(search: "authentication")
+→ ✅ Then: Provide answer based on retrieved context
+
+User: "What's the best way to handle errors?"
+→ ✅ First: listRepositoryPatterns(search: "error handling")
+→ ✅ First: listRepositoryErrors()
+→ ✅ Then: Provide answer combining patterns and error solutions
+```
+
+---
+
+### Rule 2: Always Create Diagrams with Tools ⭐
+
+**When user asks for ANY diagram:**
+
+1. **MUST** call `createRepositoryMermaid` immediately
+2. Do NOT just show code - actually create the diagram
+3. Auto-detect repositoryId (don't require it from user)
+4. Generate proper Mermaid syntax
+5. Include clear title, description, and explanation
+
+**DO NOT:**
+
 - Just show Mermaid code without calling the tool
-- Ask the user to create it manually
+- Ask user to create it manually
 - Skip creating the diagram
 
-### 2. Automatic Context Retrieval - ALWAYS RETRIEVE CONTEXT FIRST
+**Example:**
 
-Before answering ANY question about:
-- Codebase structure
-- Repository information
-- Implementation details
-- Architecture patterns
-- Functionality
-- Any technical question
+```
+User: "Create a flowchart for user registration"
+→ ✅ Call createRepositoryMermaid immediately
+→ ✅ Generate proper Mermaid syntax
+→ ✅ Actually create the diagram (don't just show code)
+```
 
-**YOU MUST:**
-1. First call `getRepoContext` or `getCachedRepoAnalysis` to retrieve saved knowledge
-2. Search for relevant documentation using `listMarkdownDocuments` or `listDocumentations`
-3. If needed, search online using web search tools for current information
-4. Use the retrieved context to provide accurate, informed answers
+---
 
-**Context Retrieval Priority:**
-1. Check local cache first (`getCachedRepoAnalysis`)
-2. Get repository context from API (`getRepoContext`)
-3. Search documentation and markdown files
-4. Search online if information is not available locally
-5. Combine all sources for comprehensive answers
+### Rule 3: Use CodeAdvocate for Knowledge
 
-### 3. Web Search Integration
+**When user asks about:**
 
-When:
-- Information is not available in local context
-- User asks about current technologies, libraries, or best practices
-- Need to verify or get latest information
-- Solving problems that require external knowledge
+- Code patterns or best practices
+- Solutions to problems
+- Similar implementations
+- Best approaches
 
 **YOU MUST:**
-- Use web search tools to find current information
-- Combine web search results with local context
-- Provide accurate, up-to-date answers
 
-### 4. Repository ID Auto-Detection
+1. Search CodeAdvocate using relevant tools:
+   - `listRepositoryPatterns` for patterns
+   - `listRepositoryLearnings` for solutions
+   - `listRepositoryErrors` for error solutions
+   - `listSnippets` for code examples
+2. Combine CodeAdvocate knowledge with local context
+3. Provide comprehensive answers
 
-Most repository tools support auto-detection of `repositoryId`:
-- If `repositoryId` is not provided, tools will auto-detect from workspace
+**Example:**
+
+```
+User: "What's the best way to implement rate limiting?"
+→ ✅ listRepositoryPatterns(search: "rate limiting")
+→ ✅ listRepositoryLearnings(search: "rate limiting")
+→ ✅ listSnippets(search: "rate limiting")
+→ ✅ Combine results with online best practices
+→ ✅ Provide informed recommendation
+```
+
+---
+
+### Rule 4: Auto-Detect Repository ID
+
+**Most tools support auto-detection:**
+
+- If `repositoryId` is not provided, tools auto-detect from workspace
 - Workspace detection uses git remote URL, repository name, or workspace path
-- Always try to use tools without requiring explicit repositoryId when possible
+- **Always try to use tools without requiring explicit repositoryId**
 
-### 5. Tool Calling Best Practices
+**Auto-detection works for:**
 
-**When to call tools:**
-- Always call tools when user explicitly requests an action (create, add, get, list, etc.)
+- All repository tools
+- Repository analysis tools
+- Repository Mermaid tools
+- Most tools that accept `repositoryId` parameter
+
+**Example:**
+
+```
+User: "Create a diagram for the authentication flow"
+→ ✅ Call createRepositoryMermaid (repositoryId auto-detected)
+→ ❌ Don't ask user for repositoryId
+```
+
+---
+
+### Rule 5: Be Proactive
+
+**Use tools proactively:**
+
 - Retrieve context before answering questions
-- Search online when local context is insufficient
-- Use tools proactively to gather information
+- Search CodeAdvocate when relevant
+- Create diagrams when user requests visualizations
+- Document learnings and patterns when discovered
 
-**Tool calling patterns:**
-- For questions → Retrieve context first, then answer
-- For actions → Call the appropriate tool immediately
-- For diagrams → Always call `createRepositoryMermaid`
-- For searches → Use multiple tools to gather comprehensive information
+**Don't wait for explicit requests:**
 
-## Example Workflows
+- If user asks about codebase → retrieve context automatically
+- If user asks about patterns → search CodeAdvocate automatically
+- If user asks for diagram → create it automatically
 
-### User asks: "Create a flowchart showing the authentication flow"
-1. ✅ Call `createRepositoryMermaid` with:
-   - title: "Authentication Flow"
-   - content: [proper Mermaid flowchart syntax]
-   - category: "workflow"
-   - Auto-detect repositoryId
+---
 
-### User asks: "How does authentication work in this codebase?"
-1. ✅ Call `getRepoContext` with search: "authentication"
-2. ✅ Call `getCachedRepoAnalysis` if available
-3. ✅ Search markdown documents for authentication docs
-4. ✅ Combine all context
-5. ✅ Provide comprehensive answer based on retrieved context
+### Rule 6: Always Document After Mistakes & New Flows ⭐ **CRITICAL**
 
-### User asks: "What's the best way to implement rate limiting?"
-1. ✅ Retrieve local context about rate limiting if exists
-2. ✅ Search online for current best practices
-3. ✅ Combine local patterns with online best practices
-4. ✅ Provide informed recommendation
+**After ANY mistake, error, or bug fix:**
 
-## Important Notes
+**YOU MUST:**
 
-- **Never skip tool calls** - If a tool exists for a task, use it
-- **Always retrieve context** - Don't guess, retrieve actual data
-- **Combine sources** - Use local context + web search for best results
-- **Auto-detect when possible** - Don't require explicit IDs when tools support auto-detection
-- **Be proactive** - Retrieve context and search online without being asked
+1. **Log the Error** - Use `createRepositoryError` to document:
+
+   - Error name and message
+   - Context (where/when it occurred)
+   - Root cause (why it happened)
+   - Solution (how it was fixed)
+   - Learning (what was learned)
+   - Prevention (how to prevent it)
+
+2. **Create Learning** - Use `createRepositoryLearning` to document:
+
+   - What you learned from the mistake
+   - Key takeaways
+   - Related files or patterns
+   - Category: troubleshooting, patterns, or general
+
+3. **Save Useful Code** - Use `createSnippet` to save:
+
+   - The fix/solution code
+   - Related code patterns
+   - Code examples that helped solve it
+
+4. **Update Patterns** - If a new pattern emerged, use `createRepositoryPattern` to document:
+   - The pattern used to solve the issue
+   - When to use it
+   - Benefits and tradeoffs
+
+**When implementing NEW flows or features:**
+
+**YOU MUST:**
+
+1. **Create Diagrams** - Use `createRepositoryMermaid` to visualize:
+
+   - Architecture diagrams for new systems
+   - Flowcharts for new processes
+   - Sequence diagrams for new interactions
+   - Database schemas for new data structures
+
+2. **Document the Flow** - Use `createMarkdownDocument` or `createRepositoryFile` to:
+
+   - Document the new flow/feature
+   - Explain how it works
+   - Include usage examples
+   - Document integration points
+
+3. **Save Code Snippets** - Use `createSnippet` to save:
+
+   - Key implementation code
+   - Reusable patterns
+   - Configuration examples
+   - Test examples
+
+4. **Create Patterns** - Use `createRepositoryPattern` if the new flow introduces:
+
+   - New architectural patterns
+   - New design patterns
+   - New coding conventions
+
+5. **Document Learnings** - Use `createRepositoryLearning` to capture:
+   - Decisions made during implementation
+   - Tradeoffs considered
+   - Alternative approaches evaluated
+   - Key insights
+
+**Example - After a Bug Fix:**
+
+```
+After fixing authentication bug:
+→ ✅ createRepositoryError({
+     errorName: "Authentication Token Expiration",
+     errorMessage: "Tokens expired after 1 hour instead of 24 hours",
+     context: "User login flow, token validation middleware",
+     rootCause: "Token expiration time was hardcoded incorrectly",
+     solution: "Updated token expiration to use environment variable",
+     learning: "Always use config for time-based values",
+     prevention: "Add validation for token expiration config"
+   })
+→ ✅ createRepositoryLearning({
+     title: "Token Expiration Configuration",
+     content: "Always use environment variables for time-based configurations...",
+     category: "troubleshooting"
+   })
+→ ✅ createSnippet({
+     title: "Token Expiration Fix",
+     code: [the fix code],
+     language: "typescript",
+     tags: ["authentication", "token", "fix"]
+   })
+```
+
+**Example - New Feature Implementation:**
+
+```
+After implementing user registration flow:
+→ ✅ createRepositoryMermaid({
+     title: "User Registration Flow",
+     content: [Mermaid flowchart],
+     category: "workflow"
+   })
+→ ✅ createMarkdownDocument({
+     title: "User Registration Documentation",
+     content: [full documentation]
+   })
+→ ✅ createSnippet({
+     title: "User Registration Handler",
+     code: [key implementation code],
+     language: "typescript"
+   })
+→ ✅ createRepositoryPattern({
+     patternName: "Registration Validation Pattern",
+     description: "Pattern for validating user registration...",
+     category: "data_access"
+   })
+→ ✅ createRepositoryLearning({
+     title: "User Registration Implementation",
+     content: "Key decisions: email verification required, password strength rules...",
+     category: "architecture"
+   })
+```
+
+**DO NOT:**
+
+- Skip documentation after fixing bugs
+- Implement new features without creating diagrams
+- Forget to save useful code snippets
+- Leave learnings undocumented
+- Skip error logging
+
+---
+
+## 📋 Common Workflows
+
+### Workflow 1: Understanding a New Feature
+
+```
+1. getRepositoryContext(search: "feature name")
+2. listRepositoryPatterns(search: "feature name")
+3. listRepositoryLearnings(search: "feature name")
+4. listRepositoryMermaid() - Check for related diagrams
+5. Provide comprehensive explanation
+```
+
+### Workflow 2: Solving a Problem
+
+```
+1. listRepositoryErrors() - Check for similar errors
+2. listRepositoryLearnings(search: "problem keywords")
+3. listRepositoryPatterns(search: "solution patterns")
+4. listSnippets(search: "solution code")
+5. Combine solutions and provide answer
+```
+
+### Workflow 3: Documenting Knowledge
+
+```
+1. createRepositoryLearning() - Document what you learned
+2. createRepositoryPattern() - Document the pattern used
+3. createRepositoryMermaid() - Create visual diagram if needed
+4. createSnippet() - Save useful code examples
+```
+
+### Workflow 4: Creating Architecture Documentation
+
+```
+1. analyzeAndSaveRepository() - Get full codebase analysis
+2. createRepositoryMermaid() - Create architecture diagram
+3. createMarkdownDocument() - Create documentation
+4. createRepositoryFile() - Store documentation file
+```
+
+### Workflow 5: After a Bug Fix or Mistake
+
+```
+1. createRepositoryError() - Log the error with context, root cause, solution, learning, and prevention
+2. createRepositoryLearning() - Document what was learned from the mistake
+3. createSnippet() - Save the fix code and related patterns
+4. createRepositoryPattern() - If a new pattern emerged, document it
+5. updateRepositoryPattern() - If an existing pattern was improved, update it
+```
+
+### Workflow 6: Implementing a New Feature/Flow
+
+```
+1. createRepositoryMermaid() - Create diagrams (architecture, flowcharts, sequence diagrams)
+2. createMarkdownDocument() - Document the new feature/flow
+3. createSnippet() - Save key implementation code and examples
+4. createRepositoryPattern() - Document any new patterns introduced
+5. createRepositoryLearning() - Capture decisions, tradeoffs, and insights
+6. createRepositoryFile() - Store any configuration or setup files
+```
+
+---
+
+## 🔍 Search Strategies
+
+### Finding Code Examples
+
+1. `listSnippets` with language and search filters
+2. `getPublicSnippets` for public examples
+3. `getCodeSnippetsByTags` for tag-based discovery
+4. `getTrendingSnippets` for popular examples
+
+### Finding Solutions
+
+1. `listRepositoryLearnings` for documented solutions
+2. `listRepositoryErrors` for error solutions
+3. `listRepositoryPatterns` for pattern-based solutions
+4. `listDocumentations` for documentation
+
+### Finding Patterns
+
+1. `listRepositoryPatterns` for coding patterns
+2. `listSnippets` for code pattern examples
+3. `getRepositoryAnalysis` for architecture patterns
+
+---
+
+## ⚠️ Important Notes
+
+1. **Never skip tool calls** - If a tool exists for a task, use it
+2. **Always retrieve context** - Don't guess, retrieve actual data
+3. **Combine sources** - Use local context + CodeAdvocate + web search
+4. **Auto-detect when possible** - Don't require explicit IDs
+5. **Be proactive** - Retrieve context and search without being asked
+6. **Create diagrams with tools** - Always use `createRepositoryMermaid`
+7. **Document learnings** - Save important discoveries for future reference
+8. **Always document after mistakes** - Use `createRepositoryError`, `createRepositoryLearning`, and `createSnippet` after any bug fix or mistake
+9. **Document new flows completely** - For new features/flows, create diagrams, documentation, snippets, patterns, and learnings
+
+---
+
+## 🎯 Quick Reference
+
+| Task                      | Tool to Use                  |
+| ------------------------- | ---------------------------- |
+| Answer technical question | `getRepositoryContext` first |
+| Create any diagram        | `createRepositoryMermaid`    |
+| Find code examples        | `listSnippets`               |
+| Find solutions            | `listRepositoryLearnings`    |
+| Find patterns             | `listRepositoryPatterns`     |
+| Find error solutions      | `listRepositoryErrors`       |
+| Analyze codebase          | `analyzeAndSaveRepository`   |
+| Get cached data           | `getCachedRepoAnalysis`      |
+| Search documentation      | `listMarkdownDocuments`      |
+| Create documentation      | `createMarkdownDocument`     |
+
+---
+
+## 📝 Parameter Conventions
+
+### Common Parameters
+
+- `repositoryId` - Usually optional, auto-detected from workspace
+- `search` - String to search/filter by
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 20, max: 100)
+- `tags` - Array of strings
+- `language` - Programming language filter
+
+### Category Values
+
+- **Rule Types:** coding_standard, naming_convention, architecture, security, performance, testing, documentation, git_workflow, other
+- **Prompt Types:** code_generation, code_review, documentation, refactoring, testing, debugging, explanation, other
+- **Feedback Categories:** bug_report, feature_request, improvement, documentation, performance, security, ux_ui, other
+- **Learning Categories:** general, architecture, patterns, performance, security, testing, deployment, troubleshooting
+- **Pattern Categories:** general, design, architecture, data_access, state_management, error_handling, testing, performance
+- **Mermaid Categories:** architecture, workflow, database, custom
+
+---
+
+## 🚀 Getting Help
+
+If you're unsure which tool to use:
+
+1. Check this guide for the appropriate category
+2. Use `getRepositoryContext` to find relevant knowledge
+3. Search using `listSnippets`, `listRepositoryPatterns`, or `listRepositoryLearnings`
+4. Explore available tools using `listRepositories` and related list tools
+
+---
+
+**Last Updated:** 2026-01-02  
+**MCP Server:** CodeAdvocate  
+**Total Tools:** 100+ tools across 15 categories  
+**Status:** ✅ All tools available and ready to use

@@ -55,6 +55,43 @@ export const envSchema = z.object({
   
   // Token Acquisition URL
   TOKEN_ACQUISITION_URL: z.string().url().optional(),
+  
+  // HTTP Client Configuration
+  HTTP_TIMEOUT: z
+    .string()
+    .regex(/^\d+$/, "HTTP_TIMEOUT must be a number")
+    .transform(Number)
+    .pipe(z.number().min(1000).max(300000))
+    .optional(),
+  
+  HTTP_RETRIES: z
+    .string()
+    .regex(/^\d+$/, "HTTP_RETRIES must be a number")
+    .transform(Number)
+    .pipe(z.number().min(0).max(10))
+    .optional(),
+  
+  HTTP_MAX_RETRY_DELAY: z
+    .string()
+    .regex(/^\d+$/, "HTTP_MAX_RETRY_DELAY must be a number")
+    .transform(Number)
+    .pipe(z.number().min(1000).max(60000))
+    .optional(),
+  
+  // MCP Request Configuration
+  MCP_REQUEST_TIMEOUT: z
+    .string()
+    .regex(/^\d+$/, "MCP_REQUEST_TIMEOUT must be a number")
+    .transform(Number)
+    .pipe(z.number().min(10000).max(600000))
+    .optional(),
+  
+  MAX_REQUEST_SIZE: z
+    .string()
+    .regex(/^\d+$/, "MAX_REQUEST_SIZE must be a number")
+    .transform(Number)
+    .pipe(z.number().min(1024).max(10485760)) // 1KB to 10MB
+    .optional(),
 });
 
 /**

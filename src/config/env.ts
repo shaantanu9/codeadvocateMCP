@@ -43,6 +43,11 @@ export interface EnvConfig {
 
   // Token Acquisition URL (for MCP dashboard)
   tokenAcquisitionUrl?: string;
+
+  // HTTP Client Configuration
+  httpTimeout: number;
+  httpRetries: number;
+  httpMaxRetryDelay: number;
 }
 
 /**
@@ -118,6 +123,15 @@ export function loadEnvConfig(): EnvConfig {
       (validatedEnv.EXTERNAL_API_URL
         ? `${validatedEnv.EXTERNAL_API_URL}/api-keys`
         : "http://localhost:5656/api-keys"),
+
+    // HTTP Client Configuration
+    httpTimeout: validatedEnv.HTTP_TIMEOUT || 60000,
+    httpRetries: validatedEnv.HTTP_RETRIES || 5,
+    httpMaxRetryDelay: validatedEnv.HTTP_MAX_RETRY_DELAY || 30000,
+
+    // MCP Request Configuration
+    mcpRequestTimeout: validatedEnv.MCP_REQUEST_TIMEOUT || 300000, // 5 minutes default
+    maxRequestSize: validatedEnv.MAX_REQUEST_SIZE || 10485760, // 10MB default
   };
 
   // Log which AI providers are configured

@@ -8,6 +8,8 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { BaseToolDefinition } from "./base/base-tool.interface.js";
+import { logger } from "../core/logger.js";
+import { AppError } from "../core/errors.js";
 
 // Import tools by category
 import * as SnippetTools from "./snippets/index.js";
@@ -226,17 +228,63 @@ const TOOLS: BaseToolDefinition[] = [
  *
  * @param server - MCP server instance to register tools with
  */
+/**
+ * Format error response for consistent error handling
+ */
+function formatErrorResponse(error: unknown): {
+  error: string;
+  message: string;
+  details?: unknown;
+} {
+  if (error instanceof AppError) {
+    return {
+      error: error.name,
+      message: error.message,
+      details: error.details,
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      error: error.name || "Error",
+      message: error.message,
+    };
+  }
+
+  return {
+    error: "UnknownError",
+    message: String(error),
+  };
+}
+
 export function registerAllTools(server: McpServer): void {
-  // Register tools from registry
+  // Register tools from registry with consistent error handling
   for (const tool of TOOLS) {
     try {
       // Extract the shape from ZodObject to get ZodRawShape
       const schema = tool.paramsSchema as z.ZodObject<z.ZodRawShape>;
       server.tool(tool.name, tool.description, schema.shape, async (params) => {
-        return await tool.execute(params);
+        try {
+          return await tool.execute(params);
+        } catch (error) {
+          logger.error(`Tool ${tool.name} failed`, {
+            error,
+            toolName: tool.name,
+            params: params ? JSON.stringify(params).substring(0, 200) : undefined,
+          });
+          
+          // Format error response for consistent error handling
+          const errorResponse = formatErrorResponse(error);
+          throw new AppError(
+            `Tool execution failed: ${errorResponse.message}`,
+            errorResponse.error,
+            500, // statusCode
+            errorResponse.details
+          );
+        }
       });
     } catch (error) {
-      console.error(`Failed to register tool: ${tool.name}`, error);
+      logger.error(`Failed to register tool: ${tool.name}`, error);
       throw error;
     }
   }

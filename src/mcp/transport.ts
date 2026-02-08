@@ -9,6 +9,8 @@ import { Request, Response, NextFunction } from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpServer } from "./server.js";
+import { envConfig } from "../config/env.js";
+import { logger } from "../core/logger.js";
 
 /**
  * Handles MCP protocol requests (both GET for streaming and POST for JSON-RPC).
@@ -26,8 +28,52 @@ export async function handleMcpRequest(
 ): Promise<void> {
   let transport: StreamableHTTPServerTransport | null = null;
   let server: McpServer | null = null;
+  let timeoutId: NodeJS.Timeout | null = null;
+
+  const cleanup = () => {
+    try {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      if (transport) {
+        transport.close();
+        transport = null;
+      }
+      if (server) {
+        server.close();
+        server = null;
+      }
+    } catch (error) {
+      logger.error("[MCP] Error during cleanup", error);
+    }
+  };
 
   try {
+    // Set up timeout for the entire request
+    timeoutId = setTimeout(() => {
+      if (!res.headersSent) {
+        logger.warn("MCP request timeout", {
+          path: req.path,
+          method: req.method,
+          timeout: envConfig.mcpRequestTimeout,
+        });
+        res.status(504).json({
+          jsonrpc: "2.0",
+          error: {
+            code: -32000,
+            message: `Request timeout after ${envConfig.mcpRequestTimeout}ms`,
+            data: {
+              timeout: envConfig.mcpRequestTimeout,
+              suggestion: "The operation took too long. Try breaking it into smaller parts.",
+            },
+          },
+          id: req.body?.id || null,
+        });
+        cleanup();
+      }
+    }, envConfig.mcpRequestTimeout);
+
     // Create a new server instance for this request
     server = createMcpServer();
 
@@ -36,24 +82,16 @@ export async function handleMcpRequest(
       sessionIdGenerator: undefined, // Stateless mode
     });
 
-    // Cleanup function to close transport and server
-    const cleanup = () => {
-      try {
-        if (transport) {
-          transport.close();
-        }
-        if (server) {
-          server.close();
-        }
-      } catch (error) {
-        console.error("[MCP] Error during cleanup:", error);
-      }
-    };
-
     // Set up cleanup handlers
     res.on("close", cleanup);
+    res.on("finish", () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    });
     res.on("error", (error) => {
-      console.error("[MCP] Response error:", error);
+      logger.error("[MCP] Response error", error);
       cleanup();
     });
 
@@ -68,24 +106,17 @@ export async function handleMcpRequest(
     // Handle the request through transport
     // The transport will handle both GET (streaming) and POST (JSON-RPC) requests
     await transport.handleRequest(req, res, requestBody);
+
+    // Clear timeout on successful completion
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
   } catch (error) {
-    console.error("[MCP] Error handling request:", error);
+    logger.error("[MCP] Error handling request", error);
 
     // Cleanup on error
-    if (transport) {
-      try {
-        transport.close();
-      } catch (e) {
-        console.error("[MCP] Error closing transport:", e);
-      }
-    }
-    if (server) {
-      try {
-        server.close();
-      } catch (e) {
-        console.error("[MCP] Error closing server:", e);
-      }
-    }
+    cleanup();
 
     // Send error response if headers not sent
     if (!res.headersSent) {

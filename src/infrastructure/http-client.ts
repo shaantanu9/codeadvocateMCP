@@ -8,6 +8,7 @@ import type { HttpRequestOptions } from "../core/types.js";
 import { ExternalApiError, ServiceUnavailableError } from "../core/errors.js";
 import { logger } from "../core/logger.js";
 import { getRequestId } from "../core/context.js";
+import { envConfig } from "../config/env.js";
 
 export interface HttpClientConfig {
   baseUrl: string;
@@ -26,8 +27,8 @@ export class HttpClient {
     this.config = {
       baseUrl: config.baseUrl,
       defaultHeaders: config.defaultHeaders || {},
-      timeout: config.timeout || 60000, // Increased from 30s to 60s
-      retries: config.retries || 5, // Increased from 3 to 5
+      timeout: config.timeout ?? envConfig.httpTimeout,
+      retries: config.retries ?? envConfig.httpRetries,
       retryDelay: config.retryDelay || 1000,
     };
   }
@@ -82,15 +83,15 @@ export class HttpClient {
    */
   private calculateBackoffDelay(attempt: number): number {
     // Exponential backoff: 2^attempt * baseDelay
-    // Cap at 30 seconds max delay
-    const maxDelay = 30000;
+    // Cap at configured max delay (default 30 seconds)
+    const maxDelay = envConfig.httpMaxRetryDelay;
     const delay = Math.pow(2, attempt) * this.config.retryDelay;
     return Math.min(delay, maxDelay);
   }
 
   /**
    * Generate curl command for debugging failed requests
-   * Shows full API key for manual testing (this is for debugging purposes)
+   * Masks sensitive headers (API keys, auth tokens) for security
    */
   private generateCurlCommand(
     url: URL,
@@ -100,8 +101,18 @@ export class HttpClient {
   ): string {
     const headersList = Object.entries(headers)
       .map(([key, value]) => {
-        // Show full value for debugging (including API keys)
-        return `-H "${key}: ${value}"`;
+        // Mask sensitive headers (API keys, auth tokens) for security
+        const isSensitive = 
+          key.toLowerCase().includes('api') || 
+          key.toLowerCase().includes('auth') ||
+          key.toLowerCase().includes('token') ||
+          key.toLowerCase().includes('authorization');
+        
+        const maskedValue = isSensitive && value.length > 8
+          ? `${value.substring(0, 8)}...`
+          : value;
+        
+        return `-H "${key}: ${maskedValue}"`;
       })
       .join(" \\\n  ");
 

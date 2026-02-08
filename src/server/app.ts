@@ -53,8 +53,14 @@ export function createApp() {
     next();
   });
 
+  // Input sanitization (early, before processing)
+  app.use(inputSanitizationMiddleware);
+
   // Request context middleware (must be early to provide context to other middleware)
   app.use(contextMiddleware);
+
+  // Request timeout middleware (for long-running requests)
+  app.use(requestTimeoutMiddleware);
 
   // Request logging middleware with client detection
   app.use((req: Request, _res: Response, next: NextFunction) => {
@@ -68,19 +74,80 @@ export function createApp() {
   });
 
   // Health check endpoint - NO AUTH REQUIRED (to confirm MCP is working)
-  app.get("/health", (_req: Request, res: Response) => {
-    res.status(200).json({
-      status: "healthy",
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
+  app.get("/health", async (_req: Request, res: Response) => {
+    const checks: Record<string, unknown> = {
       server: {
         name: "demo-mcp-server",
         version: "1.0.0",
         protocol: "Streamable HTTP",
+        uptime: process.uptime(),
       },
+      memory: process.memoryUsage(),
+      timestamp: new Date().toISOString(),
+    };
+
+    // Check external API health (non-blocking, timeout after 3 seconds)
+    try {
+      const externalApiCheck = await Promise.race([
+        checkExternalApiHealth(),
+        new Promise<{ available: boolean; latency?: number }>((resolve) =>
+          setTimeout(() => resolve({ available: false }), 3000)
+        ),
+      ]);
+      checks.externalApi = externalApiCheck;
+    } catch (error) {
+      checks.externalApi = {
+        available: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+
+    // Determine overall status
+    const externalApiAvailable =
+      checks.externalApi &&
+      typeof checks.externalApi === "object" &&
+      "available" in checks.externalApi &&
+      checks.externalApi.available === true;
+
+    const status = externalApiAvailable ? "healthy" : "degraded";
+    const statusCode = status === "healthy" ? 200 : 503;
+
+    res.status(statusCode).json({
+      status,
+      checks,
       note: "This endpoint works without authentication to confirm MCP server is running",
     });
   });
+
+  /**
+   * Check external API health by making a lightweight request
+   */
+  async function checkExternalApiHealth(): Promise<{
+    available: boolean;
+    latency?: number;
+  }> {
+    const startTime = Date.now();
+    try {
+      // Try to make a simple request to the external API
+      // Use a lightweight endpoint or just check connectivity
+      const response = await fetch(envConfig.externalApiUrl, {
+        method: "HEAD",
+        signal: AbortSignal.timeout(3000), // 3 second timeout
+      });
+
+      const latency = Date.now() - startTime;
+      return {
+        available: response.ok || response.status < 500,
+        latency,
+      };
+    } catch (error) {
+      const latency = Date.now() - startTime;
+      return {
+        available: false,
+        latency,
+      };
+    }
+  }
 
   // Activity tracking endpoints (require authentication via context)
   app.get("/api/activity/stats", getActivityStats);
