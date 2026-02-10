@@ -23,7 +23,7 @@ export interface ListSnippetsParams {
 
 class ListSnippetsTool extends BaseToolHandler implements BaseToolDefinition<ListSnippetsParams> {
   name = "listSnippets";
-  description = "List code snippets from the external API with search, filters, and pagination";
+  description = "Search and list the user's code snippets. Use when the user asks about their saved code, wants to find a snippet by language or tag, or needs to browse their collection. Returns title, language, tags, and preview for each snippet. Supports search, language/tag filters, and pagination (default 20 per page). Use getSnippet for full code content of a specific snippet.";
   
   paramsSchema = z.object({
     search: z.string().optional().describe("Search term to filter snippets"),

@@ -10,6 +10,8 @@ import { envConfig } from "../config/env.js";
 import { contextMiddleware } from "../presentation/middleware/context.middleware.js";
 import { authMiddleware } from "../presentation/middleware/auth.middleware.js";
 import { rateLimitMiddleware } from "../middleware/rate-limit.middleware.js";
+import { inputSanitizationMiddleware } from "../middleware/input-sanitization.middleware.js";
+import { requestTimeoutMiddleware } from "../middleware/request-timeout.middleware.js";
 import { handleMcpRequest } from "../mcp/transport.js";
 import { logger } from "../core/logger.js";
 import { AppError } from "../core/errors.js";

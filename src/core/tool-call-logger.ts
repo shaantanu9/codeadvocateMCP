@@ -12,9 +12,8 @@
 import {
   existsSync,
   mkdirSync,
-  appendFileSync,
-  readFileSync,
 } from "node:fs";
+import { appendFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
@@ -106,14 +105,18 @@ export class ToolCallLogger {
       // Format log entry as JSON (one line per entry for easy parsing)
       const logLine = JSON.stringify(logEntry) + "\n";
 
-      // Write to main log file
+      // Write to main log file (async, fire-and-forget)
       const mainLogFile = this.getLogFilePath(false);
-      appendFileSync(mainLogFile, logLine, "utf-8");
+      appendFile(mainLogFile, logLine, "utf-8").catch((err) => {
+        logger.error("Failed to write to main tool call log", err);
+      });
 
       // Also write to failed log file if it's a failure
       if (entry.status === "failure") {
         const failedLogFile = this.getLogFilePath(true);
-        appendFileSync(failedLogFile, logLine, "utf-8");
+        appendFile(failedLogFile, logLine, "utf-8").catch((err) => {
+          logger.error("Failed to write to failed tool call log", err);
+        });
       }
 
       // Also log to console for immediate visibility
@@ -248,18 +251,14 @@ export class ToolCallLogger {
   /**
    * Get failed tool calls from log file
    */
-  getFailedToolCalls(date?: string): ToolCallLogEntry[] {
+  async getFailedToolCalls(date?: string): Promise<ToolCallLogEntry[]> {
     try {
       const targetDate = date || new Date().toISOString().split("T")[0];
       const logFile = join(this.failedLogsDir, `tool-calls-${targetDate}.log`);
-      
-      if (!existsSync(logFile)) {
-        return [];
-      }
 
-      const content = readFileSync(logFile, "utf-8");
+      const content = await readFile(logFile, "utf-8");
       const lines = content.trim().split("\n").filter((line) => line.trim());
-      
+
       return lines.map((line) => {
         try {
           return JSON.parse(line) as ToolCallLogEntry;
@@ -267,8 +266,8 @@ export class ToolCallLogger {
           return null;
         }
       }).filter((entry): entry is ToolCallLogEntry => entry !== null);
-    } catch (error) {
-      logger.error("Failed to read failed tool calls", error);
+    } catch {
+      // File doesn't exist or read error
       return [];
     }
   }
@@ -276,18 +275,14 @@ export class ToolCallLogger {
   /**
    * Get all tool calls from log file
    */
-  getAllToolCalls(date?: string): ToolCallLogEntry[] {
+  async getAllToolCalls(date?: string): Promise<ToolCallLogEntry[]> {
     try {
       const targetDate = date || new Date().toISOString().split("T")[0];
       const logFile = join(this.logsDir, `tool-calls-${targetDate}.log`);
-      
-      if (!existsSync(logFile)) {
-        return [];
-      }
 
-      const content = readFileSync(logFile, "utf-8");
+      const content = await readFile(logFile, "utf-8");
       const lines = content.trim().split("\n").filter((line) => line.trim());
-      
+
       return lines.map((line) => {
         try {
           return JSON.parse(line) as ToolCallLogEntry;
@@ -295,8 +290,8 @@ export class ToolCallLogger {
           return null;
         }
       }).filter((entry): entry is ToolCallLogEntry => entry !== null);
-    } catch (error) {
-      logger.error("Failed to read tool calls", error);
+    } catch {
+      // File doesn't exist or read error
       return [];
     }
   }
@@ -304,15 +299,15 @@ export class ToolCallLogger {
   /**
    * Get statistics for a date
    */
-  getStatistics(date?: string): {
+  async getStatistics(date?: string): Promise<{
     total: number;
     successful: number;
     failed: number;
     successRate: number;
     averageExecutionTime: number;
     failedTools: Array<{ toolName: string; count: number }>;
-  } {
-    const entries = this.getAllToolCalls(date);
+  }> {
+    const entries = await this.getAllToolCalls(date);
     
     const successful = entries.filter((e) => e.status === "success").length;
     const failed = entries.filter((e) => e.status === "failure").length;

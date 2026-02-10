@@ -3,12 +3,15 @@
  *
  * Manages per-chat/session data storage with workspace context awareness.
  * Sessions are identified by a combination of client info and workspace path.
+ * All file I/O is async to avoid blocking the event loop.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "fs";
+import { existsSync, mkdirSync } from "fs";
+import { readFile, writeFile, unlink } from "fs/promises";
 import { join } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { logger } from "./logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -46,14 +49,16 @@ export class SessionManager {
   private cacheDir: string;
   private readonly SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
   private readonly CACHE_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  private readonly MAX_SESSIONS = 10000;
+  private readonly MAX_CACHE_ENTRIES = 50000;
 
   constructor() {
-    // Create session storage directory
+    // Create session storage directory (sync only at startup)
     const baseDir = join(__dirname, "..", "..", ".mcp-sessions");
     this.sessionDir = join(baseDir, "sessions");
     this.cacheDir = join(baseDir, "cache");
 
-    // Ensure directories exist
+    // Ensure directories exist (sync is fine at startup only)
     if (!existsSync(this.sessionDir)) {
       mkdirSync(this.sessionDir, { recursive: true });
     }
@@ -86,15 +91,18 @@ export class SessionManager {
   /**
    * Get or create a session
    */
-  getOrCreateSession(
+  async getOrCreateSession(
     sessionId: string,
     clientInfo: { ip: string; userAgent?: string },
     workspacePath?: string
-  ): SessionData {
+  ): Promise<SessionData> {
     // Try to load from disk first
-    let session = this.loadSessionFromDisk(sessionId);
+    let session = await this.loadSessionFromDisk(sessionId);
 
     if (!session) {
+      // Enforce max sessions before creating new one
+      this.enforceSessionLimit();
+
       // Create new session
       const workspaceName = workspacePath
         ? workspacePath.split(/[/\\]/).pop() || "unknown"
@@ -114,7 +122,7 @@ export class SessionManager {
       };
 
       this.sessions.set(sessionId, session);
-      this.saveSessionToDisk(session);
+      this.saveSessionToDisk(session); // fire-and-forget
     } else {
       // Update access info
       session.metadata.lastAccessed = Date.now();
@@ -125,7 +133,7 @@ export class SessionManager {
         : session.workspaceName;
 
       this.sessions.set(sessionId, session);
-      this.saveSessionToDisk(session);
+      this.saveSessionToDisk(session); // fire-and-forget
     }
 
     return session;
@@ -134,12 +142,12 @@ export class SessionManager {
   /**
    * Get session data
    */
-  getSession(sessionId: string): SessionData | null {
+  async getSession(sessionId: string): Promise<SessionData | null> {
     const session = this.sessions.get(sessionId);
     if (session) {
       session.metadata.lastAccessed = Date.now();
       session.metadata.accessCount++;
-      this.saveSessionToDisk(session);
+      this.saveSessionToDisk(session); // fire-and-forget
       return session;
     }
 
@@ -150,8 +158,8 @@ export class SessionManager {
   /**
    * Set data in a session
    */
-  setSessionData(sessionId: string, key: string, value: unknown): void {
-    const session = this.getSession(sessionId);
+  async setSessionData(sessionId: string, key: string, value: unknown): Promise<void> {
+    const session = await this.getSession(sessionId);
     if (!session) {
       throw new Error(`Session ${sessionId} not found`);
     }
@@ -159,14 +167,14 @@ export class SessionManager {
     session.data[key] = value;
     session.metadata.lastAccessed = Date.now();
     this.sessions.set(sessionId, session);
-    this.saveSessionToDisk(session);
+    this.saveSessionToDisk(session); // fire-and-forget
   }
 
   /**
    * Get data from a session
    */
-  getSessionData<T = unknown>(sessionId: string, key: string): T | null {
-    const session = this.getSession(sessionId);
+  async getSessionData<T = unknown>(sessionId: string, key: string): Promise<T | null> {
+    const session = await this.getSession(sessionId);
     if (!session) {
       return null;
     }
@@ -178,6 +186,9 @@ export class SessionManager {
    * Set cache entry
    */
   setCache<T = unknown>(key: string, value: T, ttlSeconds: number = 300): void {
+    // Enforce cache limit
+    this.enforceCacheLimit();
+
     const expiresAt = Date.now() + ttlSeconds * 1000;
     const entry: CacheEntry<T> = {
       key,
@@ -187,17 +198,17 @@ export class SessionManager {
     };
 
     this.cache.set(key, entry);
-    this.saveCacheToDisk(key, entry);
+    this.saveCacheToDisk(key, entry); // fire-and-forget
   }
 
   /**
    * Get cache entry
    */
-  getCache<T = unknown>(key: string): T | null {
+  async getCache<T = unknown>(key: string): Promise<T | null> {
     const entry = this.cache.get(key);
     if (!entry) {
       // Try loading from disk
-      const diskEntry = this.loadCacheFromDisk<T>(key);
+      const diskEntry = await this.loadCacheFromDisk<T>(key);
       if (diskEntry) {
         this.cache.set(key, diskEntry);
         return diskEntry.value as T;
@@ -208,7 +219,7 @@ export class SessionManager {
     // Check expiration
     if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
-      this.deleteCacheFromDisk(key);
+      this.deleteCacheFromDisk(key); // fire-and-forget
       return null;
     }
 
@@ -247,7 +258,7 @@ export class SessionManager {
     for (const [sessionId, session] of this.sessions.entries()) {
       if (now - session.metadata.lastAccessed > this.SESSION_TIMEOUT) {
         this.sessions.delete(sessionId);
-        this.deleteSessionFromDisk(sessionId);
+        this.deleteSessionFromDisk(sessionId); // fire-and-forget
       }
     }
 
@@ -255,8 +266,43 @@ export class SessionManager {
     for (const [key, entry] of this.cache.entries()) {
       if (now > entry.expiresAt) {
         this.cache.delete(key);
-        this.deleteCacheFromDisk(key);
+        this.deleteCacheFromDisk(key); // fire-and-forget
       }
+    }
+  }
+
+  /**
+   * Enforce max session count by removing oldest sessions
+   */
+  private enforceSessionLimit(): void {
+    if (this.sessions.size < this.MAX_SESSIONS) return;
+
+    const sorted = Array.from(this.sessions.entries())
+      .sort((a, b) => a[1].metadata.lastAccessed - b[1].metadata.lastAccessed);
+
+    // Remove oldest 10% to avoid frequent eviction
+    const removeCount = Math.ceil(this.MAX_SESSIONS * 0.1);
+    for (let i = 0; i < removeCount && i < sorted.length; i++) {
+      const [sessionId] = sorted[i];
+      this.sessions.delete(sessionId);
+      this.deleteSessionFromDisk(sessionId);
+    }
+  }
+
+  /**
+   * Enforce max cache entry count
+   */
+  private enforceCacheLimit(): void {
+    if (this.cache.size < this.MAX_CACHE_ENTRIES) return;
+
+    const sorted = Array.from(this.cache.entries())
+      .sort((a, b) => a[1].createdAt - b[1].createdAt);
+
+    const removeCount = Math.ceil(this.MAX_CACHE_ENTRIES * 0.1);
+    for (let i = 0; i < removeCount && i < sorted.length; i++) {
+      const [key] = sorted[i];
+      this.cache.delete(key);
+      this.deleteCacheFromDisk(key);
     }
   }
 
@@ -270,110 +316,79 @@ export class SessionManager {
   }
 
   /**
-   * Save session to disk
+   * Save session to disk (async, fire-and-forget)
    */
   private saveSessionToDisk(session: SessionData): void {
-    try {
-      const filePath = join(this.sessionDir, `${session.sessionId}.json`);
-      writeFileSync(filePath, JSON.stringify(session, null, 2));
-    } catch (error) {
-      console.error(`[SessionManager] Error saving session to disk:`, error);
-    }
+    const filePath = join(this.sessionDir, `${session.sessionId}.json`);
+    writeFile(filePath, JSON.stringify(session, null, 2)).catch((error) => {
+      logger.error(`[SessionManager] Error saving session to disk`, error);
+    });
   }
 
   /**
-   * Load session from disk
+   * Load session from disk (async)
    */
-  private loadSessionFromDisk(sessionId: string): SessionData | null {
+  private async loadSessionFromDisk(sessionId: string): Promise<SessionData | null> {
     try {
       const filePath = join(this.sessionDir, `${sessionId}.json`);
-      if (existsSync(filePath)) {
-        const data = readFileSync(filePath, "utf-8");
-        return JSON.parse(data) as SessionData;
-      }
-    } catch (error) {
-      console.error(`[SessionManager] Error loading session from disk:`, error);
+      const data = await readFile(filePath, "utf-8");
+      return JSON.parse(data) as SessionData;
+    } catch {
+      // File doesn't exist or parse error — return null
+      return null;
     }
-    return null;
   }
 
   /**
-   * Delete session from disk
+   * Delete session from disk (async, fire-and-forget)
    */
   private deleteSessionFromDisk(sessionId: string): void {
-    try {
-      const filePath = join(this.sessionDir, `${sessionId}.json`);
-      if (existsSync(filePath)) {
-        unlinkSync(filePath);
-      }
-    } catch (error) {
-      // Only log if it's not a "file not found" error (ENOENT)
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (!errorMessage.includes("ENOENT") && !errorMessage.includes("no such file")) {
-        console.error(
-          `[SessionManager] Error deleting session from disk:`,
-          error instanceof Error ? error.message : error
-        );
-      }
-    }
+    const filePath = join(this.sessionDir, `${sessionId}.json`);
+    unlink(filePath).catch(() => {
+      // Ignore ENOENT errors
+    });
   }
 
   /**
-   * Save cache to disk
+   * Save cache to disk (async, fire-and-forget)
    */
   private saveCacheToDisk(key: string, entry: CacheEntry): void {
-    try {
-      const safeKey = key.replace(/[^a-zA-Z0-9]/g, "_");
-      const filePath = join(this.cacheDir, `${safeKey}.json`);
-      writeFileSync(filePath, JSON.stringify(entry, null, 2));
-    } catch (error) {
-      console.error(`[SessionManager] Error saving cache to disk:`, error);
-    }
+    const safeKey = key.replace(/[^a-zA-Z0-9]/g, "_");
+    const filePath = join(this.cacheDir, `${safeKey}.json`);
+    writeFile(filePath, JSON.stringify(entry, null, 2)).catch((error) => {
+      logger.error(`[SessionManager] Error saving cache to disk`, error);
+    });
   }
 
   /**
-   * Load cache from disk
+   * Load cache from disk (async)
    */
-  private loadCacheFromDisk<T>(key: string): CacheEntry<T> | null {
+  private async loadCacheFromDisk<T>(key: string): Promise<CacheEntry<T> | null> {
     try {
       const safeKey = key.replace(/[^a-zA-Z0-9]/g, "_");
       const filePath = join(this.cacheDir, `${safeKey}.json`);
-      if (existsSync(filePath)) {
-        const data = readFileSync(filePath, "utf-8");
-        const entry = JSON.parse(data) as CacheEntry<T>;
-        // Check if expired
-        if (Date.now() > entry.expiresAt) {
-          this.deleteCacheFromDisk(key);
-          return null;
-        }
-        return entry;
+      const data = await readFile(filePath, "utf-8");
+      const entry = JSON.parse(data) as CacheEntry<T>;
+      // Check if expired
+      if (Date.now() > entry.expiresAt) {
+        this.deleteCacheFromDisk(key);
+        return null;
       }
-    } catch (error) {
-      console.error(`[SessionManager] Error loading cache from disk:`, error);
+      return entry;
+    } catch {
+      return null;
     }
-    return null;
   }
 
   /**
-   * Delete cache from disk
+   * Delete cache from disk (async, fire-and-forget)
    */
   private deleteCacheFromDisk(key: string): void {
-    try {
-      const safeKey = key.replace(/[^a-zA-Z0-9]/g, "_");
-      const filePath = join(this.cacheDir, `${safeKey}.json`);
-      if (existsSync(filePath)) {
-        unlinkSync(filePath);
-      }
-    } catch (error) {
-      // Only log if it's not a "file not found" error (ENOENT)
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (!errorMessage.includes("ENOENT") && !errorMessage.includes("no such file")) {
-        console.error(
-          `[SessionManager] Error deleting cache from disk:`,
-          error instanceof Error ? error.message : error
-        );
-      }
-    }
+    const safeKey = key.replace(/[^a-zA-Z0-9]/g, "_");
+    const filePath = join(this.cacheDir, `${safeKey}.json`);
+    unlink(filePath).catch(() => {
+      // Ignore ENOENT errors
+    });
   }
 }
 

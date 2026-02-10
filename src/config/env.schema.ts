@@ -29,6 +29,7 @@ export const envSchema = z.object({
   // External API Configuration
   EXTERNAL_API_URL: z.string().url().optional(),
   EXTERNAL_API_BASE_URL: z.string().url().optional(),
+  EXTERNAL_API_KEY: z.string().optional(),
   
   // AI Provider API Keys (optional)
   OPENAI_API_KEY: z.string().optional(),

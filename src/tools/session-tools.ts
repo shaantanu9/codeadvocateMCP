@@ -104,7 +104,7 @@ ${
         .describe("The value to store (string, number, boolean, or object)"),
     },
     async ({ key, value }) => {
-      const success = setSessionData(key, value);
+      const success = await setSessionData(key, value);
       if (!success) {
         return {
           content: [
@@ -135,7 +135,7 @@ ${
       key: z.string().describe("The key to retrieve data for"),
     },
     async ({ key }) => {
-      const value = getSessionData(key);
+      const value = await getSessionData(key);
       if (value === null) {
         return {
           content: [
@@ -201,7 +201,7 @@ ${
     "Clear all data from the current chat session",
     {},
     async () => {
-      const success = clearSessionData();
+      const success = await clearSessionData();
       if (!success) {
         return {
           content: [
@@ -271,7 +271,7 @@ ${
       key: z.string().describe("The cache key"),
     },
     async ({ key }) => {
-      const value = getCache(key);
+      const value = await getCache(key);
       if (value === null) {
         return {
           content: [

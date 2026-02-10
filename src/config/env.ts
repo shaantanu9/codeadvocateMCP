@@ -21,8 +21,8 @@ export interface EnvConfig {
   anthropicApiKey?: string;
 
   // External API Configuration
-  // Uses MCP_SERVER_TOKEN for authentication (no separate EXTERNAL_API_KEY needed)
-  externalApiKey: string; // Always uses MCP_SERVER_TOKEN
+  // Uses EXTERNAL_API_KEY (sk_... format) for API authentication, falls back to MCP_SERVER_TOKEN
+  externalApiKey: string;
   externalApiUrl: string;
   externalApiBaseUrl: string; // Base URL for external API (e.g., http://localhost:5656/api/)
 
@@ -48,6 +48,10 @@ export interface EnvConfig {
   httpTimeout: number;
   httpRetries: number;
   httpMaxRetryDelay: number;
+
+  // MCP Request Configuration
+  mcpRequestTimeout: number;
+  maxRequestSize: number;
 }
 
 /**
@@ -90,8 +94,9 @@ export function loadEnvConfig(): EnvConfig {
     anthropicApiKey: validatedEnv.ANTHROPIC_API_KEY,
 
     // External API Configuration
-    // Always uses MCP_SERVER_TOKEN for external API authentication
-    externalApiKey: mcpServerToken,
+    // Uses EXTERNAL_API_KEY (sk_... format) for external API authentication
+    // Falls back to MCP_SERVER_TOKEN if EXTERNAL_API_KEY is not set
+    externalApiKey: validatedEnv.EXTERNAL_API_KEY || mcpServerToken,
     externalApiUrl: validatedEnv.EXTERNAL_API_URL || "http://localhost:5656",
     // Construct base URL: if EXTERNAL_API_BASE_URL is set, use it; otherwise derive from EXTERNAL_API_URL
     // ALL endpoints require /api/ prefix (both production and localhost)
@@ -160,15 +165,19 @@ export function loadEnvConfig(): EnvConfig {
   );
   console.log(`[Config] .env file loaded from: ${envPath}`);
 
-  if (config.externalApiKey && config.externalApiKey !== "not-required") {
+  if (validatedEnv.EXTERNAL_API_KEY) {
     console.log(
-      `[Config] External API key configured (using MCP_SERVER_TOKEN)`
+      `[Config] External API key configured (using EXTERNAL_API_KEY: ${validatedEnv.EXTERNAL_API_KEY.substring(0, 8)}...)`
+    );
+  } else if (config.externalApiKey && config.externalApiKey !== "not-required") {
+    console.log(
+      `[Config] External API key configured (fallback to MCP_SERVER_TOKEN)`
     );
   } else {
     console.warn(
       "[Config] No external API key found. External API tools may not work."
     );
-    console.warn("[Config] Set MCP_SERVER_TOKEN in .env file");
+    console.warn("[Config] Set EXTERNAL_API_KEY (preferred) or MCP_SERVER_TOKEN in .env file");
   }
 
   // Log MCP server authentication status

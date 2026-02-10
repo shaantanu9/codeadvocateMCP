@@ -22,7 +22,7 @@ class CreateDocumentationTool extends BaseToolHandler implements BaseToolDefinit
   
   paramsSchema = z.object({
     title: z.string().describe("Title of the documentation"),
-    type: z.string().optional().describe("Type of documentation (e.g., service, guide)"),
+    type: z.string().optional().describe("Type: service, component, module, library, overview, logic-flow, other, adr (Architecture Decision Record). Use 'overview' if backend only allows standard types."),
     category: z.string().optional().describe("Category (e.g., backend, frontend)"),
     content: z.string().describe("Content of the documentation"),
     metadata: z.record(z.unknown()).optional().describe("Additional metadata"),

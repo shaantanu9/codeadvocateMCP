@@ -24,11 +24,11 @@ import { activityTracker } from "../../core/activity-tracker.js";
  * Middleware to create request context with workspace and session support
  * Must be called before other middleware that need context
  */
-export function contextMiddleware(
+export async function contextMiddleware(
   req: Request,
   _res: Response,
   next: NextFunction
-): void {
+): Promise<void> {
   // Extract token from headers
   let token: string | undefined;
 
@@ -70,7 +70,7 @@ export function contextMiddleware(
     (req.query.session_id as string) ||
     sessionManager.generateSessionId(clientInfo, workspacePath);
 
-  const session = sessionManager.getOrCreateSession(
+  const session = await sessionManager.getOrCreateSession(
     sessionId,
     clientInfo,
     workspacePath

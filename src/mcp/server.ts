@@ -8,25 +8,26 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAllTools } from "../tools/tool-registry.js";
+import { registerResources } from "./resources.js";
+import { registerPrompts } from "./prompts.js";
 
 /**
- * Creates a new MCP server instance with all tools registered.
+ * Creates a new MCP server instance with all tools, resources, and prompts registered.
  *
  * @returns Configured McpServer instance
  */
 export function createMcpServer(): McpServer {
   const server = new McpServer({
-    name: "demo-mcp-server",
+    name: "codeadvocate-mcp",
     version: "1.0.0",
     description:
-      "MCP server for external API integration with token-based authentication. Provides tools to interact with code snippets, projects, and collections from an external API.",
-    // Add server metadata that will appear in MCP dashboard
-    // Note: The SDK may expose this through serverInfo in initialize response
+      "CodeAdvocate MCP server — manage code snippets, repositories, documentation, and personal knowledge. Provides tools for actions, resources for read-only context, and prompts for common workflows.",
   });
 
-  // Register all tools using the scalable pattern
-  // Tools are organized by category in src/tools/
-  registerAllTools(server);
+  // Register all three MCP primitives
+  registerAllTools(server);   // Tools: actions with side effects
+  registerResources(server);  // Resources: read-only data for LLM context
+  registerPrompts(server);    // Prompts: reusable workflow templates
 
   return server;
 }

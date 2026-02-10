@@ -27,8 +27,9 @@ class AddSnippetToCollectionTool extends BaseToolHandler implements BaseToolDefi
 
     try {
       const apiService = this.getApiService();
+      // API expects snippetIds (array); send single id as one-element array for compatibility
       const result = await apiService.post(`/api/collections/${params.collectionId}/snippets`, {
-        snippetId: params.snippetId,
+        snippetIds: [params.snippetId],
       });
       return jsonResponse(result, `✅ Added snippet ${params.snippetId} to collection ${params.collectionId}`);
     } catch (error) {

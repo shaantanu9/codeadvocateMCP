@@ -15,6 +15,26 @@ export interface ToolContext {
 }
 
 /**
+ * MCP Tool Annotations (advisory hints for clients)
+ *
+ * These help MCP clients (Cursor, Claude Desktop, ChatGPT, etc.)
+ * understand what a tool does and display appropriate safety indicators.
+ * They are hints only — not security features.
+ */
+export interface ToolAnnotations {
+  /** true if the tool does not modify its environment */
+  readOnlyHint?: boolean;
+  /** true if the tool may perform destructive updates (delete, overwrite) */
+  destructiveHint?: boolean;
+  /** true if repeated calls with the same args produce the same result */
+  idempotentHint?: boolean;
+  /** true if the tool interacts with external entities beyond the MCP server */
+  openWorldHint?: boolean;
+  /** Index signature for SDK compatibility */
+  [key: string]: unknown;
+}
+
+/**
  * Base tool definition
  */
 export interface BaseToolDefinition<TParams = unknown> {
@@ -32,6 +52,11 @@ export interface BaseToolDefinition<TParams = unknown> {
    * Zod schema for tool parameters validation
    */
   paramsSchema: z.ZodType<TParams>;
+
+  /**
+   * MCP tool annotations — advisory hints for clients
+   */
+  annotations?: ToolAnnotations;
 
   /**
    * Execute the tool with given parameters

@@ -16,7 +16,7 @@ export interface GetSnippetParams {
 
 class GetSnippetTool extends BaseToolHandler implements BaseToolDefinition<GetSnippetParams> {
   name = "getSnippet";
-  description = "Get a specific code snippet by ID";
+  description = "Retrieve full details of a specific code snippet by ID, including the complete code, language, tags, description, and metadata. Use this after listSnippets to get the actual code content, or when the user references a snippet by ID.";
   
   paramsSchema = z.object({
     snippetId: z.string().describe("The ID of the snippet to retrieve"),

@@ -46,7 +46,41 @@ export class ExternalAPIService {
   }
 
   /**
-   * Make authenticated API request
+   * Check if an HTTP status code is retryable (server errors)
+   */
+  private isRetryableStatus(status: number): boolean {
+    return status === 502 || status === 503 || status === 504;
+  }
+
+  /**
+   * Check if an error is a retryable network error
+   */
+  private isRetryableError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false;
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes("fetch failed") ||
+      msg.includes("network") ||
+      msg.includes("econnreset") ||
+      msg.includes("econnrefused") ||
+      msg.includes("etimedout") ||
+      msg.includes("enotfound") ||
+      msg.includes("timeout") ||
+      error.name === "AbortError"
+    );
+  }
+
+  /**
+   * Calculate exponential backoff with jitter
+   */
+  private backoffDelay(attempt: number): number {
+    const base = Math.pow(2, attempt) * 1000;
+    const jitter = Math.random() * 500;
+    return Math.min(base + jitter, envConfig.httpMaxRetryDelay);
+  }
+
+  /**
+   * Make authenticated API request with retry logic
    */
   async request<T = unknown>(
     method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
@@ -61,71 +95,102 @@ export class ExternalAPIService {
       throw new Error("External API service is not available");
     }
 
-    try {
-      // Build URL with query parameters
-      const url = new URL(endpoint, this.baseUrl);
-      if (options?.queryParams) {
-        Object.entries(options.queryParams).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            url.searchParams.append(key, String(value));
-          }
-        });
-      }
+    const maxRetries = envConfig.httpRetries;
+    let lastError: Error | null = null;
 
-      // Prepare headers
-      const headers: Record<string, string> = {
-        "X-API-Key": this.apiKey,
-        "Content-Type": "application/json",
-        ...options?.headers,
-      };
-
-      // Prepare request options
-      const requestOptions: RequestInit = {
-        method,
-        headers,
-      };
-
-      // Add body for POST, PUT, PATCH
-      if (options?.body && ["POST", "PUT", "PATCH"].includes(method)) {
-        requestOptions.body = JSON.stringify(options.body);
-      }
-
-      console.log(
-        `[ExternalAPI] ${method} ${url.pathname}${url.search ? url.search : ""}`
-      );
-
-      // Make request
-      const response = await fetch(url.toString(), requestOptions);
-
-      // Handle errors
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "Unknown error");
-        let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
-
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.message || errorJson.error || errorMessage;
-        } catch {
-          // If not JSON, use the text as is
-          if (errorText) {
-            errorMessage = `${errorMessage} - ${errorText}`;
-          }
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // Build URL with query parameters
+        const url = new URL(endpoint, this.baseUrl);
+        if (options?.queryParams) {
+          Object.entries(options.queryParams).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              url.searchParams.append(key, String(value));
+            }
+          });
         }
 
-        throw new Error(errorMessage);
-      }
+        // Prepare headers
+        const headers: Record<string, string> = {
+          "X-API-Key": this.apiKey,
+          "Content-Type": "application/json",
+          ...options?.headers,
+        };
 
-      // Parse response
-      const contentType = response.headers.get("content-type");
-      if (contentType?.includes("application/json")) {
-        return (await response.json()) as T;
-      } else {
-        return (await response.text()) as unknown as T;
+        // Prepare request options
+        const requestOptions: RequestInit = {
+          method,
+          headers,
+        };
+
+        // Add body for POST, PUT, PATCH
+        if (options?.body && ["POST", "PUT", "PATCH"].includes(method)) {
+          requestOptions.body = JSON.stringify(options.body);
+        }
+
+        console.log(
+          `[ExternalAPI] ${method} ${url.pathname}${url.search ? url.search : ""}${attempt > 0 ? ` (retry ${attempt}/${maxRetries})` : ""}`
+        );
+
+        // Make request
+        const response = await fetch(url.toString(), requestOptions);
+
+        // Handle errors
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => "Unknown error");
+          let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
+
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.message || errorJson.error || errorMessage;
+          } catch {
+            if (errorText) {
+              errorMessage = `${errorMessage} - ${errorText}`;
+            }
+          }
+
+          // Retry on server errors (502, 503, 504)
+          if (this.isRetryableStatus(response.status) && attempt < maxRetries) {
+            const delay = this.backoffDelay(attempt);
+            console.warn(
+              `[ExternalAPI] Retryable ${response.status} error, retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`
+            );
+            await new Promise((r) => setTimeout(r, delay));
+            continue;
+          }
+
+          throw new Error(errorMessage);
+        }
+
+        // Parse response
+        const contentType = response.headers.get("content-type");
+        if (contentType?.includes("application/json")) {
+          return (await response.json()) as T;
+        } else {
+          return (await response.text()) as unknown as T;
+        }
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Retry on network errors
+        if (this.isRetryableError(error) && attempt < maxRetries) {
+          const delay = this.backoffDelay(attempt);
+          console.warn(
+            `[ExternalAPI] Network error, retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries}): ${lastError.message}`
+          );
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+
+        // Non-retryable error or exhausted retries
+        logError(`ExternalAPI ${method} ${endpoint}`, error);
+        throw error;
       }
-    } catch (error) {
-      logError(`ExternalAPI ${method} ${endpoint}`, error);
-      throw error;
     }
+
+    // Exhausted all retries
+    logError(`ExternalAPI ${method} ${endpoint} failed after ${maxRetries} retries`, lastError);
+    throw lastError || new Error(`Request failed after ${maxRetries} retries`);
   }
 
   /**

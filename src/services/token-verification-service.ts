@@ -50,7 +50,7 @@ export async function verifyToken(
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ key: token }),
     });
 
     if (!response.ok) {

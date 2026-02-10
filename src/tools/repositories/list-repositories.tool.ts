@@ -18,7 +18,7 @@ export interface ListRepositoriesParams {
 
 class ListRepositoriesTool extends BaseToolHandler implements BaseToolDefinition<ListRepositoriesParams> {
   name = "listRepositories";
-  description = "List repositories with type filter (all/individual/company) and search";
+  description = "List the user's repositories. Use when the user asks about their projects or you need a repository ID for other tools (errors, learnings, patterns, rules, etc.). Filter by type (all/individual/company) and search by name. Returns repository names, IDs, types, and member counts.";
   
   paramsSchema = z.object({
     type: z.enum(["all", "individual", "company"]).optional().describe("Filter by repository type"),

@@ -28,6 +28,17 @@ import * as AccountTools from "./accounts/index.js";
 import * as TeamTools from "./teams/index.js";
 import * as RepositoryAnalysisTools from "./repository-analysis/index.js";
 import * as WellnessTools from "./wellness/index.js";
+import * as SearchTools from "./search/index.js";
+import * as DashboardTools from "./dashboard/index.js";
+import * as UserTools from "./user/index.js";
+import * as CodeAnalysisTools from "./code-analysis/index.js";
+import * as NotificationTools from "./notifications/index.js";
+import * as QuestionTools from "./questions/index.js";
+import * as LeaderboardTools from "./leaderboards/index.js";
+import * as GithubTools from "./github/index.js";
+import * as ContentTools from "./content/index.js";
+import * as FeedTools from "./feed/index.js";
+import * as DiagnosticsTools from "./diagnostics/index.js";
 import { registerSessionTools } from "./session-tools.js";
 import { getClientInfoTool } from "./client-info-tool.js";
 
@@ -36,7 +47,7 @@ import { getClientInfoTool } from "./client-info-tool.js";
  * Organized by category for better management
  */
 const TOOLS: BaseToolDefinition[] = [
-  // Snippets (11 tools)
+  // Snippets (19 tools)
   SnippetTools.listSnippetsTool,
   SnippetTools.getSnippetTool,
   SnippetTools.createSnippetTool,
@@ -48,6 +59,14 @@ const TOOLS: BaseToolDefinition[] = [
   SnippetTools.getTrendingSnippetsTool,
   SnippetTools.getPublicSnippetsTool,
   SnippetTools.getArchivedSnippetsTool,
+  SnippetTools.deleteSnippetTool,
+  SnippetTools.unarchiveSnippetTool,
+  SnippetTools.trashSnippetTool,
+  SnippetTools.restoreSnippetTool,
+  SnippetTools.getSnippetCountTool,
+  SnippetTools.analyzeSnippetTool,
+  SnippetTools.getSnippetAnnotationsTool,
+  SnippetTools.createAnnotationTool,
 
   // Projects (5 tools) - COMMENTED OUT FOR NOW
   // ProjectTools.listProjectsTool,
@@ -162,11 +181,20 @@ const TOOLS: BaseToolDefinition[] = [
   CodeSnippetTools.createCodeSnippetTool,
   CodeSnippetTools.getCodeSnippetsByTagsTool,
 
-  // Personal Knowledge (4 tools)
+  // Personal Knowledge (13 tools)
   PersonalTools.listPersonalLinksTool,
   PersonalTools.listPersonalNotesTool,
   PersonalTools.listPersonalFilesTool,
   PersonalTools.searchPersonalKnowledgeTool,
+  PersonalTools.createNoteTool,
+  PersonalTools.getNoteTool,
+  PersonalTools.updateNoteTool,
+  PersonalTools.deleteNoteTool,
+  PersonalTools.createLinkTool,
+  PersonalTools.deleteLinkTool,
+  PersonalTools.createFileTool,
+  PersonalTools.deleteFileTool,
+  PersonalTools.listTagsTool,
 
   // Archive & Trash (2 tools)
   ArchiveTools.listArchiveTool,
@@ -221,6 +249,59 @@ const TOOLS: BaseToolDefinition[] = [
   // Wellness (2 tools)
   WellnessTools.breakReminderTool,
   WellnessTools.recordBreakTool,
+
+  // Search (1 tool)
+  SearchTools.searchTool,
+
+  // Dashboard (1 tool)
+  DashboardTools.getDashboardStatsTool,
+
+  // User (7 tools)
+  UserTools.whoAmITool,
+  UserTools.getUserProfileTool,
+  UserTools.getProfileStatsTool,
+  UserTools.getUserPreferencesTool,
+  UserTools.updateUserPreferencesTool,
+  UserTools.followUserTool,
+  UserTools.unfollowUserTool,
+
+  // Code Analysis (1 tool)
+  CodeAnalysisTools.analyzeCodeTool,
+
+  // Notifications (3 tools)
+  NotificationTools.listNotificationsTool,
+  NotificationTools.getUnreadCountTool,
+  NotificationTools.markNotificationReadTool,
+
+  // Q&A (7 tools)
+  QuestionTools.listQuestionsTool,
+  QuestionTools.createQuestionTool,
+  QuestionTools.getQuestionTool,
+  QuestionTools.listAnswersTool,
+  QuestionTools.createAnswerTool,
+  QuestionTools.acceptAnswerTool,
+  QuestionTools.voteOnQATool,
+
+  // Leaderboards (1 tool)
+  LeaderboardTools.getLeaderboardTool,
+
+  // GitHub Integration (4 tools)
+  GithubTools.getGithubStatusTool,
+  GithubTools.syncGithubTool,
+  GithubTools.getGithubSettingsTool,
+  GithubTools.importFromGithubTool,
+
+  // Content Interactions (3 tools)
+  ContentTools.upvoteContentTool,
+  ContentTools.starContentTool,
+  ContentTools.addCommentTool,
+
+  // Feed & Recommendations (2 tools)
+  FeedTools.getFeedTool,
+  FeedTools.getRecommendationsTool,
+
+  // Diagnostics (1 tool)
+  DiagnosticsTools.testConnectionTool,
 ];
 
 /**
@@ -257,13 +338,62 @@ function formatErrorResponse(error: unknown): {
   };
 }
 
+/**
+ * Infer tool annotations from tool name when not explicitly set.
+ * Uses naming conventions: list/get/search → readOnly, delete → destructive, etc.
+ */
+function inferAnnotations(toolName: string): {
+  readOnlyHint?: boolean;
+  destructiveHint?: boolean;
+  idempotentHint?: boolean;
+  openWorldHint?: boolean;
+} {
+  const name = toolName.toLowerCase();
+
+  // Read-only tools: list, get, search, explore, who, count
+  if (/^(list|get|search|explore|who|count)/.test(name) ||
+      name.includes("stats") || name.includes("context") || name.includes("status")) {
+    return { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
+  }
+
+  // Destructive tools: delete, remove, revoke, unlink, trash
+  if (/^(delete|remove|revoke|unlink|trash)/.test(name)) {
+    return { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true };
+  }
+
+  // Update/patch tools: idempotent writes
+  if (/^(update|mark|accept|setup)/.test(name)) {
+    return { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true };
+  }
+
+  // Toggle/archive/restore: idempotent state changes
+  if (/^(toggle|archive|unarchive|restore|follow|unfollow|star|upvote)/.test(name)) {
+    return { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true };
+  }
+
+  // Create tools: not idempotent (each call creates a new item)
+  if (/^(create|add|import|sync|analyze|vote|record)/.test(name)) {
+    return { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true };
+  }
+
+  // Diagnostics: read-only
+  if (name === "testconnection" || name === "getclientinfo" || name === "breakreminder") {
+    return { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
+  }
+
+  // Default: write, non-destructive, external
+  return { readOnlyHint: false, destructiveHint: false, openWorldHint: true };
+}
+
 export function registerAllTools(server: McpServer): void {
   // Register tools from registry with consistent error handling
   for (const tool of TOOLS) {
     try {
       // Extract the shape from ZodObject to get ZodRawShape
       const schema = tool.paramsSchema as z.ZodObject<z.ZodRawShape>;
-      server.tool(tool.name, tool.description, schema.shape, async (params) => {
+      // Use explicit annotations if provided, otherwise infer from tool name
+      const annotations = tool.annotations ?? inferAnnotations(tool.name);
+      server.tool(tool.name, tool.description, schema.shape, annotations, async (params) => {
         try {
           return await tool.execute(params);
         } catch (error) {

@@ -26,7 +26,7 @@ class CreateSnippetTool
   implements BaseToolDefinition<CreateSnippetParams>
 {
   name = "createSnippet";
-  description = "Create a new code snippet";
+  description = "Save a new code snippet to the user's collection. Use when the user wants to save code they wrote, found useful, or wants to reference later. Requires title, code, and language. Optionally add tags for organization and a description for context. Returns the created snippet with its ID.";
 
   paramsSchema = z.object({
     title: z.string().describe("Title of the snippet"),

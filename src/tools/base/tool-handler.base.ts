@@ -39,6 +39,7 @@ export abstract class BaseToolHandler {
 
   /**
    * Handle errors consistently across all tools
+   * Extracts structured error details from API responses and provides actionable suggestions
    */
   protected handleError(
     toolName: string,
@@ -46,24 +47,67 @@ export abstract class BaseToolHandler {
     defaultMessage: string,
     params?: Record<string, unknown>,
     startTime?: number
-  ): { content: Array<{ type: "text"; text: string }> } {
+  ): { content: Array<{ type: "text"; text: string }>; isError: true } {
     // Log failure to tool call logger
     if (startTime !== undefined && params) {
       toolCallLogger.logToolFailure(toolName, params, startTime, error, defaultMessage);
     }
-    
+
     logger.error(`${toolName} failed`, error);
-    
+
     let message: string;
+    let statusCode: number | undefined;
+    let suggestion: string | undefined;
+
     if (error instanceof AppError) {
       message = error.message;
+      statusCode = error.statusCode;
     } else if (error instanceof Error) {
       message = error.message;
+      // Extract HTTP status from error message pattern "API request failed: 401 ..."
+      const statusMatch = message.match(/API request failed: (\d{3})/);
+      if (statusMatch) {
+        statusCode = parseInt(statusMatch[1], 10);
+      }
     } else {
       message = defaultMessage;
     }
 
-    return textResponse(`❌ Error: ${message}`);
+    // Provide actionable suggestions based on status code
+    if (statusCode) {
+      switch (statusCode) {
+        case 401:
+          suggestion = "Check that your API key is valid and not expired. You can verify it with the testConnection tool.";
+          break;
+        case 403:
+          suggestion = "Your API key doesn't have the required permissions (scopes) for this action.";
+          break;
+        case 404:
+          suggestion = "The requested resource was not found. Verify the ID or parameters are correct.";
+          break;
+        case 429:
+          suggestion = "Rate limit exceeded. Wait a moment and try again.";
+          break;
+        case 502:
+        case 503:
+        case 504:
+          suggestion = "The main app server is temporarily unavailable. Try again in a few seconds.";
+          break;
+      }
+    }
+
+    const parts: string[] = [`❌ Error: ${message}`];
+    if (statusCode) {
+      parts.push(`Status: ${statusCode}`);
+    }
+    if (suggestion) {
+      parts.push(`💡 ${suggestion}`);
+    }
+
+    return {
+      ...textResponse(parts.join("\n")),
+      isError: true as const,
+    };
   }
 
   /**

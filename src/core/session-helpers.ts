@@ -1,6 +1,6 @@
 /**
  * Session Helper Functions
- * 
+ *
  * Convenience functions for accessing session and cache data from tools
  */
 
@@ -42,14 +42,14 @@ export function getCurrentSession() {
 /**
  * Set data in current session
  */
-export function setSessionData(key: string, value: unknown): boolean {
+export async function setSessionData(key: string, value: unknown): Promise<boolean> {
   const sessionId = getCurrentSessionId();
   if (!sessionId) {
     return false;
   }
 
   try {
-    sessionManager.setSessionData(sessionId, key, value);
+    await sessionManager.setSessionData(sessionId, key, value);
     return true;
   } catch (error) {
     console.error(`[SessionHelpers] Error setting session data:`, error);
@@ -60,7 +60,7 @@ export function setSessionData(key: string, value: unknown): boolean {
 /**
  * Get data from current session
  */
-export function getSessionData<T = unknown>(key: string): T | null {
+export async function getSessionData<T = unknown>(key: string): Promise<T | null> {
   const sessionId = getCurrentSessionId();
   if (!sessionId) {
     return null;
@@ -92,7 +92,7 @@ export function setCache<T = unknown>(
 /**
  * Get cache with workspace-aware key
  */
-export function getCache<T = unknown>(key: string): T | null {
+export async function getCache<T = unknown>(key: string): Promise<T | null> {
   const workspacePath = getCurrentWorkspacePath();
   const cacheKey = sessionManager.getWorkspaceCacheKey(workspacePath, key);
 
@@ -110,22 +110,18 @@ export function getAllSessionData(): Record<string, unknown> | null {
 /**
  * Clear session data
  */
-export function clearSessionData(): boolean {
+export async function clearSessionData(): Promise<boolean> {
   const sessionId = getCurrentSessionId();
   if (!sessionId) {
     return false;
   }
 
-  const session = sessionManager.getSession(sessionId);
+  const session = await sessionManager.getSession(sessionId);
   if (session) {
     session.data = {};
-    sessionManager.setSessionData(sessionId, "__cleared__", true);
+    await sessionManager.setSessionData(sessionId, "__cleared__", true);
     return true;
   }
 
   return false;
 }
-
-
-
-
