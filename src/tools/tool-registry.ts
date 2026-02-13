@@ -41,6 +41,7 @@ import * as FeedTools from "./feed/index.js";
 import * as DiagnosticsTools from "./diagnostics/index.js";
 import { registerSessionTools } from "./session-tools.js";
 import { getClientInfoTool } from "./client-info-tool.js";
+import { CONSOLIDATED_TOOLS, SINGLE_TOOLS } from "./consolidated-tool-registry.js";
 
 /**
  * Registry of all available tools
@@ -386,8 +387,16 @@ function inferAnnotations(toolName: string): {
 }
 
 export function registerAllTools(server: McpServer): void {
+  // Choose tool set based on feature flag
+  const useConsolidated = process.env.USE_CONSOLIDATED_TOOLS === "true";
+  const toolsToRegister = useConsolidated
+    ? [...CONSOLIDATED_TOOLS, ...SINGLE_TOOLS]
+    : TOOLS;
+
+  logger.info(`Registering ${toolsToRegister.length} tools (consolidated: ${useConsolidated})`);
+
   // Register tools from registry with consistent error handling
-  for (const tool of TOOLS) {
+  for (const tool of toolsToRegister) {
     try {
       // Extract the shape from ZodObject to get ZodRawShape
       const schema = tool.paramsSchema as z.ZodObject<z.ZodRawShape>;

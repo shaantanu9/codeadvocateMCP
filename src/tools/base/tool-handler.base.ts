@@ -139,6 +139,20 @@ export abstract class BaseToolHandler {
    * @returns Repository ID (never undefined, throws if cannot be resolved)
    * @throws AppError if repository ID cannot be resolved
    */
+  /**
+   * Validate that a required parameter is present for a given action.
+   * Throws a clear error if the parameter is missing.
+   */
+  protected requireParam<T>(value: T | undefined, paramName: string, actionName: string): T {
+    if (value === undefined || value === null || value === "") {
+      throw new AppError(
+        `Parameter '${paramName}' is required for action '${actionName}'`,
+        "MISSING_REQUIRED_PARAM"
+      );
+    }
+    return value;
+  }
+
   protected async resolveRepositoryId(
     repositoryId?: string,
     workspacePath?: string

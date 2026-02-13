@@ -93,6 +93,12 @@ export const envSchema = z.object({
     .transform(Number)
     .pipe(z.number().min(1024).max(10485760)) // 1KB to 10MB
     .optional(),
+
+  // Tool Consolidation
+  USE_CONSOLIDATED_TOOLS: z
+    .enum(["true", "false"])
+    .optional()
+    .default("false"),
 });
 
 /**
